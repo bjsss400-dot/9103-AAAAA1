@@ -27,36 +27,32 @@ function setupLines() {
   ];
 }
 
-//設定畫線的邏輯
+// this code was generated with the help of ChatGPT, it give me suggection of
+// how to define a function to make the line draw as the way I want it to be
 function drawLines() {
-//讓她不會數到第14條線
   if (currentLineIndex < lines.length) {
-//讓pausecount倒數，到0時用else執行畫線
+//this code was generated with the help of ChatGPT, it helps me with structuring the line-drawing part
     if (pauseCount > 0) 
     pauseCount--;
     else {
-//鎖定其中一個lines
     let currentLine = lines[currentLineIndex];
-//這是讓currentlength會慢慢變長
     currentLength = currentLength + lineSpeed;
-//畫線，但是對於每條lines的長度只畫到currrentlength的長度
     drawPartialLine(currentLine, currentLength);
-
+//this code was generated with the help of ChatGPT, it inform me of how to reset the timer
     if (currentLength >= currentLine.len) {
-//如果currentLength畫完了，就把Index數加1繼續畫下一條線
      currentLineIndex++;
      currentLength = 0;
-//重設倒數讓線條不會馬上開始
      pauseCount = pauseFrames;
      }
    }
  }
 }
 
-//實際繪製線條
+
 function drawPartialLine(Line, Length) {
   fill(0)
-//因為在計算線條方位時是用320*320
+// this code was generated with the help of ChatGPT, it inform me the
+// necessity of divided 320 as the scale was originaly created in 320*320
   let scaleX = width / 320;
   let scaleY = height / 320;
 
