@@ -6,7 +6,8 @@ let pauseFrames = 20;
 let pauseCount = 0;
 let Thickness = 5
 
-//設定線的屬性(位置、長度etc)
+// this code was generated with the help of ChatGPT, it helps calculate the
+// exact location and length for each of the rectangles
 function setupLines() {
   lines = [
     { type: "h", x: 0,   y: 32,  len: 302,},
