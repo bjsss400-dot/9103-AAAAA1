@@ -9,6 +9,7 @@ function draw() {
   drawBorder();
 }
 
+// this code was generated with the help of ChatGPT, it gives the RGB number of dark gold
 function drawBorder() {
   let borderThickness = 4;
   fill(166, 137, 80);
