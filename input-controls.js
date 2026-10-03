@@ -60,15 +60,107 @@ class InputControls {
     this.hovered = null;
     this.strokeStart = null;
     this.previousPoint = null;
+    this.mode = 'paint';
+    this.swapSource = null;
+    this.undoStack = [];
+    this.redoStack = [];
+    this.status = 'Choose a colour, then click or drag to paint.';
+    this.activePointer = null;
     canvas.addEventListener('pointerdown', event => this.pointerDown(event));
     canvas.addEventListener('pointermove', event => this.pointerMove(event));
     canvas.addEventListener('pointerup', () => this.endStroke());
     canvas.addEventListener('pointercancel', () => this.endStroke());
     canvas.addEventListener('lostpointercapture', () => this.endStroke());
     canvas.addEventListener('pointerleave', () => { this.hovered = null; });
+    document.addEventListener('keydown', event => this.keyDown(event));
 
   }
   snapshot() { return this.regions.map(r => r.colour); }
+  restore(colours) { this.regions.forEach((region, i) => { region.colour = colours[i]; }); }
+  recordChange(before) {
+    if (before.some((colour, i) => colour !== this.regions[i].colour)) {
+      this.undoStack.push(before);
+      if (this.undoStack.length > 100) this.undoStack.shift();
+      this.redoStack = [];
+    }
+    this.updateUI();
+  }
+  selectColour(index) {
+    this.selectedColour = INPUT_PALETTE[index].hex;
+    this.setMode('paint');
+  }
+  setMode(mode) {
+    this.endStroke();
+    this.mode = mode;
+    this.swapSource = null;
+    this.status = mode === 'swap' ? 'Choose two regions to exchange their colours.' : 'Click or drag across the grid to paint.';
+    this.updateUI();
+  }
+  swap(region) {
+    if (!this.swapSource) {
+      this.swapSource = region;
+      this.status = 'Now choose a second region. Esc cancels.';
+    } else if (this.swapSource === region) {
+      this.swapSource = null;
+      this.status = 'Selection cancelled. Choose two regions.';
+    } else {
+      const before = this.snapshot();
+      [this.swapSource.colour, region.colour] = [region.colour, this.swapSource.colour];
+      this.swapSource = null;
+      this.recordChange(before);
+      this.status = 'Colours exchanged. Try another pair.';
+    }
+    this.updateUI();
+  }
+  undo() {
+    if (!this.ready) return;
+    this.endStroke();
+    if (!this.undoStack.length) return;
+    this.redoStack.push(this.snapshot());
+    this.restore(this.undoStack.pop());
+    this.swapSource = null;
+    this.status = 'Last change undone.';
+    this.updateUI();
+  }
+  redo() {
+    if (!this.ready) return;
+    this.endStroke();
+    if (!this.redoStack.length) return;
+    this.undoStack.push(this.snapshot());
+    this.restore(this.redoStack.pop());
+    this.swapSource = null;
+    this.status = 'Change restored.';
+    this.updateUI();
+  }
+  clear() {
+    if (!this.ready) return;
+    this.endStroke();
+    const before = this.snapshot();
+    this.regions.forEach(region => { region.colour = INPUT_PALETTE[3].hex; });
+    this.swapSource = null;
+    this.recordChange(before);
+    this.status = 'A fresh canvas. Your previous colours can be restored with Undo.';
+    this.updateUI();
+  }
+  keyDown(event) {
+    if (!this.ready || /INPUT|TEXTAREA|SELECT/.test(event.target.tagName) || event.target.isContentEditable) return;
+    const modifier = event.ctrlKey || event.metaKey;
+    if (modifier && event.key.toLowerCase() === 'z') {
+      event.preventDefault();
+      event.shiftKey ? this.redo() : this.undo();
+    } else if (modifier && event.key.toLowerCase() === 'y') {
+      event.preventDefault(); this.redo();
+    } else if (!modifier && /^[1-6]$/.test(event.key)) {
+      this.selectColour(Number(event.key) - 1);
+    } else if (!modifier && event.key.toLowerCase() === 'x') {
+      this.setMode(this.mode === 'swap' ? 'paint' : 'swap');
+    } else if (event.key === 'Escape') {
+      this.swapSource = null;
+      this.status = 'Selection cancelled.';
+      this.updateUI();
+    }
+  }
+  updateUI() {} // Bound to visible controls in the interface stage.
   regionAt(point) { return this.regions.find(r => r.contains(point.x, point.y)) || null; }
   pointFromEvent(event) {
     const bounds = this.canvas.getBoundingClientRect();
@@ -80,6 +172,8 @@ class InputControls {
     event.preventDefault();
     const point = this.pointFromEvent(event), region = this.regionAt(point);
     if (!region) return;
+    if (this.mode === 'swap' || event.shiftKey) { this.swap(region); return; }
+    this.swapSource = null;
     this.canvas.setPointerCapture(event.pointerId);
     this.activePointer = event.pointerId;
     this.strokeStart = this.snapshot();
@@ -101,9 +195,16 @@ class InputControls {
     }
     this.previousPoint = point;
   }
-  endStroke() { this.strokeStart = null; this.previousPoint = null; this.activePointer = null; }
+  endStroke() {
+    const before = this.strokeStart;
+    this.strokeStart = null;
+    this.previousPoint = null;
+    this.activePointer = null;
+    if (before) this.recordChange(before);
+  }
   draw(showHover = true) {
     for (const region of this.regions) region.draw();
     if (showHover && this.hovered) this.hovered.draw('rgba(0, 0, 0, 0.07)');
+    if (showHover && this.swapSource) this.swapSource.draw('rgba(234, 198, 64, 0.4)');
   }
 }
