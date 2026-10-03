@@ -1,5 +1,7 @@
 // User-input mechanic: Jinsa Bai, implemented with assistance from ChatGPT (OpenAI).
-// AI assisted with region detection, pointer interactions and code structure.
+// AI assisted with region hit testing, pointer interactions and code structure.
+// Pointer API reference: https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events
+// Drawing/export API reference: https://p5js.org/reference/
 // This standalone mechanic uses its own static test layout; no teammate scripts are loaded.
 const INPUT_PALETTE = [
   { name: 'Red', hex: '#c83b32' },
@@ -68,12 +70,18 @@ class InputControls {
     this.activePointer = null;
     canvas.addEventListener('pointerdown', event => this.pointerDown(event));
     canvas.addEventListener('pointermove', event => this.pointerMove(event));
-    canvas.addEventListener('pointerup', () => this.endStroke());
-    canvas.addEventListener('pointercancel', () => this.endStroke());
-    canvas.addEventListener('lostpointercapture', () => this.endStroke());
+    canvas.addEventListener('pointerup', event => {
+      if (event.pointerId === this.activePointer) this.endStroke();
+    });
+    canvas.addEventListener('pointercancel', event => {
+      if (event.pointerId === this.activePointer) this.endStroke();
+    });
+    canvas.addEventListener('lostpointercapture', event => {
+      if (event.pointerId === this.activePointer) this.endStroke();
+    });
     canvas.addEventListener('pointerleave', () => { this.hovered = null; });
     document.addEventListener('keydown', event => this.keyDown(event));
-
+    this.bindUI();
   }
   snapshot() { return this.regions.map(r => r.colour); }
   restore(colours) { this.regions.forEach((region, i) => { region.colour = colours[i]; }); }
@@ -160,7 +168,60 @@ class InputControls {
       this.updateUI();
     }
   }
-  updateUI() {} // Bound to visible controls in the interface stage.
+  bindUI() {
+    const palette = document.getElementById('palette');
+    INPUT_PALETTE.forEach((colour, index) => {
+      const button = document.createElement('button');
+      button.className = 'swatch';
+      button.dataset.index = index;
+      button.style.backgroundColor = colour.hex;
+      button.setAttribute('aria-label', `Select ${colour.name} (key ${index + 1})`);
+      button.title = `${colour.name} · ${index + 1}`;
+      button.addEventListener('click', () => this.selectColour(index));
+      palette.appendChild(button);
+    });
+    document.getElementById('paint-mode').onclick = () => this.setMode('paint');
+    document.getElementById('swap-mode').onclick = () => this.setMode('swap');
+    document.getElementById('undo').onclick = () => this.undo();
+    document.getElementById('redo').onclick = () => this.redo();
+    document.getElementById('clear').onclick = () => this.clear();
+    document.getElementById('save').onclick = () => {
+      if (!this.ready) return;
+      // Export only the artwork; hover and selection overlays are omitted.
+      renderArtwork(false);
+      saveCanvas(this.canvas, 'my-mondrian-composition', 'png');
+      this.status = 'Your composition has been saved as a PNG.';
+      this.updateUI();
+    };
+    this.updateUI();
+  }
+  setReady(ready) {
+    if (ready === this.ready) return;
+    this.ready = ready;
+    this.status = 'Choose a colour, then click or drag to paint.';
+    this.updateUI();
+  }
+  updateUI() {
+    for (const button of document.querySelectorAll('.swatch')) {
+      const selected = INPUT_PALETTE[Number(button.dataset.index)].hex === this.selectedColour;
+      button.classList.toggle('selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
+      button.disabled = !this.ready;
+    }
+    for (const mode of ['paint', 'swap']) {
+      const button = document.getElementById(`${mode}-mode`);
+      button.classList.toggle('selected', this.mode === mode);
+      button.setAttribute('aria-pressed', String(this.mode === mode));
+      button.disabled = !this.ready;
+    }
+    document.getElementById('colour-name').textContent = 'Selected: ' + INPUT_PALETTE.find(c => c.hex === this.selectedColour).name;
+    document.getElementById('undo').disabled = !this.ready || !this.undoStack.length;
+    document.getElementById('redo').disabled = !this.ready || !this.redoStack.length;
+    document.getElementById('clear').disabled = !this.ready;
+    document.getElementById('save').disabled = !this.ready;
+    document.getElementById('status').textContent = this.ready ? this.status : 'Preparing your canvas.';
+    this.canvas.style.cursor = this.ready ? 'crosshair' : 'wait';
+  }
   regionAt(point) { return this.regions.find(r => r.contains(point.x, point.y)) || null; }
   pointFromEvent(event) {
     const bounds = this.canvas.getBoundingClientRect();

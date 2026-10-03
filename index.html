@@ -1,1 +1,51 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Jinsa — User input prototype</title><script src="libraries/p5.min.js"></script></head><body><main id="canvas-holder"></main><script src="input-controls.js"></script><script src="sketch.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jinsa — A study in colour</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="libraries/p5.min.js"></script>
+  
+</head>
+<body>
+  <main class="studio">
+    <header class="page-header">
+      <p class="eyebrow">MONDRIAN / AN INTERACTIVE INTERPRETATION</p>
+      <h1>A study in colour<span>.</span></h1>
+      <p class="intro">Choose a colour. Change the balance. Make it your own.</p>
+    </header>
+    <section class="workspace" aria-label="Interactive colour studio">
+      <div class="artwork">
+        <div class="canvas-meta"><span>COMPOSITION / 01</span><span id="phase">READY TO COLOUR</span></div>
+        <div id="canvas-holder"></div>
+        <div class="artwork-rule"></div>
+        <div class="canvas-caption"><span>Inspired by Piet Mondrian · 1921</span><span>500 × 500</span></div>
+      </div>
+      <aside class="tools" aria-label="Colour tools">
+        <p class="eyebrow">YOUR INTERPRETATION</p>
+        <h2>Change the balance.</h2>
+        <p class="tool-intro">A different colour. A different emphasis. Explore how each region changes the whole.</p>
+        <div class="tool-section">
+          <div class="section-title"><h3>01 / Pick a colour</h3><span>Keys 1–6</span></div>
+          <div id="palette" class="palette" aria-label="Colour palette"></div>
+          <p id="colour-name" class="small">Selected: Red</p>
+        </div>
+        <div class="tool-section">
+          <div class="section-title"><h3>02 / Choose a gesture</h3><span>Key X</span></div>
+          <div class="mode-controls"><button id="paint-mode" class="selected" aria-pressed="true">Paint</button><button id="swap-mode" aria-pressed="false">Swap colours</button></div>
+          <p class="small">Paint: click or drag across regions.<br>Swap: select two regions to exchange colours.</p>
+        </div>
+        <div class="tool-section history-actions"><button id="undo" disabled>↶ Undo</button><button id="redo" disabled>↷ Redo</button><button id="clear" disabled>Clear colours</button></div>
+        <button id="save" class="save-button" disabled>Save your composition <span>↗</span></button>
+        <p id="status" class="status" role="status" aria-live="polite">Choose a colour, then click or drag across the grid.</p>
+        <details class="shortcuts"><summary>Keyboard & gesture guide</summary><p>1–6: select colour · X: switch tool<br>Shift + click two regions: swap<br>Ctrl / ⌘ + Z: undo<br>Ctrl / ⌘ + Shift + Z: redo<br>Esc: cancel a swap selection</p></details>
+      </aside>
+    </section>
+    <footer>One structure. Countless arrangements.<span>JINSA BAI / USER INPUT</span></footer>
+  </main>
+  
+  <script src="input-controls.js"></script>
+  <script src="sketch.js"></script>
+</body>
+</html>

@@ -6,7 +6,7 @@ function setup() {
   canvas.parent('canvas-holder');
   pixelDensity(1);
   inputControls = new InputControls(canvas.elt);
-  inputControls.ready = true;
+  inputControls.setReady(true);
 }
 function draw() { renderArtwork(); }
 function renderArtwork(showHover = true) {
