@@ -1,15 +1,14 @@
 // Independent User input prototype by Jinsa Bai, implemented with ChatGPT assistance.
-// setup/draw only assemble the input mechanic and its own static test grid.
+// Main sketch assembles the mechanic and displays only its square canvas.
 let inputControls;
 function setup() {
   const canvas = createCanvas(500, 500);
   canvas.parent('canvas-holder');
   pixelDensity(1);
   inputControls = new InputControls(canvas.elt);
-  inputControls.setReady(true);
 }
 function draw() { renderArtwork(); }
-function renderArtwork(showHover = true) {
+function renderArtwork() {
   background('#171817');
-  inputControls.draw(showHover);
+  inputControls.display();
 }

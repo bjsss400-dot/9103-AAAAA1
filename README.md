@@ -21,37 +21,35 @@ ChatGPT (OpenAI) assisted with generating the initial prototype, explaining its 
 
 ## Jinsa — independent User input prototype
 
-This `jinsa` branch starts from `main`, independently of `time-based`. It contains Jinsa Bai's standalone user-input mechanic and a separately designed static Mondrian-inspired test grid. No teammate JavaScript is imported or modified. The test layout is a creative interpretation, not a faithful copy of the painting or the final shared grid.
+The `jinsa` branch starts from `main`, independently of `time-based`. It contains an independent user-input mechanic and a separately designed static Mondrian-inspired test grid. No teammate JavaScript is imported or modified. The test layout is an interpretation, not a faithful reproduction of the painting or the final shared grid.
 
 ### Run
 
-Download [jinsa-preview.html](jinsa-preview.html) and open it in a browser. It is a self-contained, offline preview. For development, open `index.html` with the bundled `libraries/p5.min.js`, or use a local server such as `python -m http.server 8000`.
+Download [jinsa-preview.html](jinsa-preview.html) and open it in a browser. This self-contained offline preview displays **only the square canvas**. For development, open `index.html` with the bundled `libraries/p5.min.js`, or run `python -m http.server 8000`.
 
-### Controls
+### Interaction instructions
 
-- Press **1–6** to select red, yellow, blue, white, gray or black. The page displays only the canvas; no palette, buttons, labels or sidebars are added.
-- **Paint:** click a region or hold and drag across several regions.
-- **Swap colours:** select two regions to exchange their colours. **Shift + click** also swaps; **X** switches tools. Click the source again or press **Esc** to cancel.
-- Undo/redo with **Ctrl/⌘ + Z** or **Ctrl/⌘ + Shift + Z**. A whole drag is one undo step. A new edit clears redo history.
-- **C** returns regions to white and can be undone.
-- **S** exports a 500 × 500 PNG without hover or selection overlays.
+- Click a block directly to change its colour. Each block follows **white → red → yellow → blue → white** independently.
+- Each press changes exactly one block once. Clicking a black divider or outside the canvas does nothing.
+- Colour choices require no palette, keyboard selection, labels or buttons. There is no drag painting or swap mode.
+- Optional keyboard controls: **Ctrl/⌘ + Z** to undo, **Ctrl/⌘ + Shift + Z** or **Ctrl/⌘ + Y** to redo, **C** to clear, and **S** to save a 500 × 500 PNG.
 
 ### Structure and techniques
 
-`input-controls.js` contains the entire user-input mechanic: `ColourRegion` stores each region's geometry and colour; `InputControls` handles palette selection, hit testing, pointer capture, drag-path sampling, colour exchanges and snapshot history (up to 100 steps). Mouse/touch coordinates are converted from the canvas's displayed size into the 500 × 500 layout. `sketch.js` only assembles the mechanic and renders the static canvas. Input operates immediately; no time, audio or noise mechanic is implemented in this standalone preview. `index.html` and `style.css` display only the responsive canvas. All controls use mouse/keyboard input, and these instructions remain in the README rather than appearing on the artwork.
+`input-controls.js` contains the user-input mechanic. `ColourBlock` stores position, size, `colorIndex` and `clickCount`. Its `contains()` method uses bounds comparisons and logical operators; `changeColour()` uses `if / else` to advance or wrap the colour cycle; `display()` draws the current colour. `createBlock()` creates an instance and the controller adds it to the `blocks` array with `push()`. `for...of` loops find the clicked block and display all blocks. The global p5 `mousePressed()` callback receives canvas coordinates and delegates to the controller. `resetComposition()` resets the objects; snapshot history supports undo/redo. `sketch.js` uses `setup()` and `draw()` to assemble and render the mechanic. No time, audio or noise mechanic is implemented here.
 
-**Ownership:** Jinsa Bai — User input, implemented with AI assistance. Future team integration should pass shared region data to the constructor and coordinate rendering with the other mechanics; the current independent layout is for testing this contribution.
+**Ownership:** Jinsa Bai — User input, implemented with AI assistance. The static layout tests this individual contribution; team integration can pass shared region data to the constructor.
 
 ### AI and external references
 
-ChatGPT (OpenAI) assisted in generating this user-input code, explaining its logic, designing the test layout and interface, writing history and drag logic, creating tests and drafting these notes. The relevant JavaScript and CSS files also acknowledge the assistance. Region hit testing finds which rectangle contains a pointer, dragging samples points along the pointer path, and saved colour arrays support undo/redo. The contributor should review and understand the code before assessment.
+ChatGPT (OpenAI) assisted in generating and explaining the user-input code, test layout, click cycling, history, tests and these notes. Assistance is also acknowledged in the JavaScript and CSS files. A hit test identifies the block under the click, its colour index advances through a fixed array, and snapshots restore colours and click counts for undo/redo. The contributor should review and understand the code before assessment.
 
-- p5.js reference: https://p5js.org/reference/ — canvas creation, fills, rectangles and PNG export. The p5.js library is included locally.
-- MDN Pointer Events: https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events — mouse/touch events and pointer capture.
-- Piet Mondrian's painting, named in Inspiration above, informs the palette and unequal rectangular divisions. The standalone test layout was created separately for this mechanic.
+- p5.js mouse input: https://p5js.org/reference/p5/mousePressed/
+- p5.js reference: https://p5js.org/reference/ — canvas, colour fills, rectangles and PNG export. The library is bundled locally.
+- Piet Mondrian's painting, named in Inspiration, informs the palette and unequal rectangular areas. The standalone layout was created separately for this mechanic.
 
 ### Validation
 
-Run `node tests/input-controls.test.cjs`. The tests run the actual mechanic and renderer with a minimal DOM/p5 adapter and check scaled input coordinates, grid-gap rejection, drag history, no-op edits, colour exchanges, clear/undo, keyboard controls and the export call. They are logic tests, not a full browser test. To additionally render the demonstration PNG, install `@napi-rs/canvas` in your test environment and run `RENDER_PREVIEW=1 node tests/input-controls.test.cjs`.
+Run `node tests/input-controls.test.cjs`. Tests invoke the actual p5 callbacks with a minimal DOM/drawing adapter and check click cycling, independent blocks, divider/outside rejection, undo/redo, reset, export and a canvas-only page. These are logic tests, not a full browser test. To also render the demonstration PNG, install `@napi-rs/canvas` in your test environment and run `RENDER_PREVIEW=1 node tests/input-controls.test.cjs`.
 
-![Demonstration arrangement created through the input handlers](preview/jinsa-demo.png)
+![Composition created by clicking individual blocks](preview/jinsa-demo.png)

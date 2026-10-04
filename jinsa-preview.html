@@ -19,45 +19,16 @@ html, body { margin: 0; padding: 0; background: white; }
 </head>
 <body>
   <div id="canvas-holder"></div>
-  <script>// User-input mechanic: Jinsa Bai, implemented with assistance from ChatGPT (OpenAI).
-// AI assisted with region hit testing, pointer interactions and code structure.
-// Pointer API reference: https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events
-// Drawing/export API reference: https://p5js.org/reference/
-// This standalone mechanic uses its own static test layout; no teammate scripts are loaded.
-const INPUT_PALETTE = [
-  { name: 'Red', hex: '#c83b32' },
-  { name: 'Yellow', hex: '#eac640' },
-  { name: 'Blue', hex: '#24568b' },
-  { name: 'White', hex: '#f8f6ef' },
-  { name: 'Gray', hex: '#aaa79e' },
-  { name: 'Black', hex: '#171817' }
-];
+  <script>// User-input mechanic: Jinsa Bai, implemented with ChatGPT (OpenAI) assistance.
+// AI assisted with hit testing, colour cycling, undo/redo and code structure.
+// p5.js mouse input reference: https://p5js.org/reference/p5/mousePressed/
+// The standalone test layout is independent of teammate scripts.
+const COLOUR_CYCLE = ['#f8f6ef', '#c83b32', '#eac640', '#24568b'];
 const GRID_SIZE = 500;
 const GRID_GAP = 6;
 
-class ColourRegion {
-  constructor(id, cells) {
-    this.id = id;
-    this.cells = cells;
-    this.colour = INPUT_PALETTE[3].hex;
-  }
-  contains(x, y) {
-    return this.cells.some(c => x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h);
-  }
-  draw(overlay = null) {
-    fill(overlay || this.colour);
-    noStroke();
-    for (const c of this.cells) {
-      // Overlap removes subpixel seams; the black lines are drawn above the fills.
-      rect(c.x * width / GRID_SIZE, c.y * height / GRID_SIZE,
-        c.w * width / GRID_SIZE + 0.2, c.h * height / GRID_SIZE + 0.2);
-    }
-  }
-}
-
-// Independently designed unequal rectangles for testing the user-input mechanic.
-// These are an interpretation of Mondrian, not a reproduction of the painting.
-// Each entry is [x, y, width, height] in a 500 × 500 coordinate system.
+// Unequal rectangles in a separately designed Mondrian-inspired test composition.
+// Each entry is [x, y, width, height]. All interactions remain inside the square.
 const INPUT_LAYOUT = [
   [0, 0, 80, 110], [80, 0, 230, 110], [310, 0, 110, 110],
   [420, 0, 80, 340], [0, 110, 130, 230], [130, 110, 180, 230],
@@ -67,201 +38,145 @@ const INPUT_LAYOUT = [
   [310, 340, 110, 90], [310, 430, 110, 35], [310, 465, 110, 35],
   [420, 340, 80, 160]
 ];
-function buildInputRegions(layout) {
-  return layout.map(([x, y, w, h], id) => new ColourRegion(id, [{
-    x: x + GRID_GAP / 2, y: y + GRID_GAP / 2,
-    w: w - GRID_GAP, h: h - GRID_GAP
-  }]));
+
+class ColourBlock {
+  constructor(id, x, y, w, h) {
+    this.id = id;
+    this.x = x + GRID_GAP / 2;
+    this.y = y + GRID_GAP / 2;
+    this.w = w - GRID_GAP;
+    this.h = h - GRID_GAP;
+    this.colorIndex = 0;
+    this.clickCount = 0;
+  }
+  contains(x, y) {
+    return x >= this.x && x < this.x + this.w &&
+      y >= this.y && y < this.y + this.h;
+  }
+  changeColour() {
+    this.clickCount++;
+    if (this.colorIndex === COLOUR_CYCLE.length - 1) {
+      this.colorIndex = 0;
+    } else {
+      this.colorIndex++;
+    }
+  }
+  reset() { this.colorIndex = 0; this.clickCount = 0; }
+  display() {
+    noStroke();
+    fill(COLOUR_CYCLE[this.colorIndex]);
+    // Grid coordinates are scaled to the p5 canvas dimensions.
+    rect(this.x * width / GRID_SIZE, this.y * height / GRID_SIZE,
+      this.w * width / GRID_SIZE, this.h * height / GRID_SIZE);
+  }
 }
+
+function createBlock(id, geometry) { return new ColourBlock(id, ...geometry); }
 
 class InputControls {
   constructor(canvas, layout = INPUT_LAYOUT) {
     this.canvas = canvas;
-    this.regions = buildInputRegions(layout);
-    this.selectedColour = INPUT_PALETTE[0].hex;
-    this.ready = false;
-    this.hovered = null;
-    this.strokeStart = null;
-    this.previousPoint = null;
-    this.mode = 'paint';
-    this.swapSource = null;
+    this.blocks = [];
     this.undoStack = [];
     this.redoStack = [];
-    this.activePointer = null;
-    canvas.addEventListener('pointerdown', event => this.pointerDown(event));
-    canvas.addEventListener('pointermove', event => this.pointerMove(event));
-    canvas.addEventListener('pointerup', event => {
-      if (event.pointerId === this.activePointer) this.endStroke();
-    });
-    canvas.addEventListener('pointercancel', event => {
-      if (event.pointerId === this.activePointer) this.endStroke();
-    });
-    canvas.addEventListener('lostpointercapture', event => {
-      if (event.pointerId === this.activePointer) this.endStroke();
-    });
-    canvas.addEventListener('pointerleave', () => { this.hovered = null; });
+    // push() creates one persistent object per region; clicks update that object.
+    for (const geometry of layout) {
+      this.blocks.push(createBlock(this.blocks.length, geometry));
+    }
+    canvas.style.cursor = 'pointer';
     document.addEventListener('keydown', event => this.keyDown(event));
-    this.updateCanvasCursor();
   }
-  snapshot() { return this.regions.map(r => r.colour); }
-  restore(colours) { this.regions.forEach((region, i) => { region.colour = colours[i]; }); }
+  snapshot() {
+    return this.blocks.map(block => ({ colorIndex: block.colorIndex, clickCount: block.clickCount }));
+  }
+  restore(states) {
+    for (let i = 0; i < this.blocks.length; i++) {
+      this.blocks[i].colorIndex = states[i].colorIndex;
+      this.blocks[i].clickCount = states[i].clickCount;
+    }
+  }
   recordChange(before) {
-    if (before.some((colour, i) => colour !== this.regions[i].colour)) {
-      this.undoStack.push(before);
-      if (this.undoStack.length > 100) this.undoStack.shift();
-      this.redoStack = [];
+    this.undoStack.push(before);
+    if (this.undoStack.length > 100) this.undoStack.shift();
+    this.redoStack = [];
+  }
+  handleClick(canvasX, canvasY) {
+    if (canvasX < 0 || canvasY < 0 || canvasX >= width || canvasY >= height) return;
+    const gridX = canvasX * GRID_SIZE / width;
+    const gridY = canvasY * GRID_SIZE / height;
+    for (const block of this.blocks) {
+      if (block.contains(gridX, gridY)) {
+        const before = this.snapshot();
+        block.changeColour();
+        this.recordChange(before);
+        break; // A press changes exactly one block, once.
+      }
     }
-    this.updateCanvasCursor();
   }
-  selectColour(index) {
-    this.selectedColour = INPUT_PALETTE[index].hex;
-    this.setMode('paint');
-  }
-  setMode(mode) {
-    this.endStroke();
-    this.mode = mode;
-    this.swapSource = null;
-    this.updateCanvasCursor();
-  }
-  swap(region) {
-    if (!this.swapSource) {
-      this.swapSource = region;
-    } else if (this.swapSource === region) {
-      this.swapSource = null;
-    } else {
-      const before = this.snapshot();
-      [this.swapSource.colour, region.colour] = [region.colour, this.swapSource.colour];
-      this.swapSource = null;
-      this.recordChange(before);
-    }
-    this.updateCanvasCursor();
+  reset() {
+    if (!this.blocks.some(block => block.colorIndex !== 0 || block.clickCount !== 0)) return;
+    const before = this.snapshot();
+    for (const block of this.blocks) block.reset();
+    this.recordChange(before);
   }
   undo() {
-    if (!this.ready) return;
-    this.endStroke();
-    if (!this.undoStack.length) return;
+    if (this.undoStack.length === 0) return;
     this.redoStack.push(this.snapshot());
     this.restore(this.undoStack.pop());
-    this.swapSource = null;
-    this.updateCanvasCursor();
   }
   redo() {
-    if (!this.ready) return;
-    this.endStroke();
-    if (!this.redoStack.length) return;
+    if (this.redoStack.length === 0) return;
     this.undoStack.push(this.snapshot());
     this.restore(this.redoStack.pop());
-    this.swapSource = null;
-    this.updateCanvasCursor();
-  }
-  clear() {
-    if (!this.ready) return;
-    this.endStroke();
-    const before = this.snapshot();
-    this.regions.forEach(region => { region.colour = INPUT_PALETTE[3].hex; });
-    this.swapSource = null;
-    this.recordChange(before);
-    this.updateCanvasCursor();
-  }
-  keyDown(event) {
-    if (!this.ready || /INPUT|TEXTAREA|SELECT/.test(event.target.tagName) || event.target.isContentEditable) return;
-    const modifier = event.ctrlKey || event.metaKey;
-    if (modifier && event.key.toLowerCase() === 'z') {
-      event.preventDefault();
-      event.shiftKey ? this.redo() : this.undo();
-    } else if (modifier && event.key.toLowerCase() === 'y') {
-      event.preventDefault(); this.redo();
-    } else if (!modifier && /^[1-6]$/.test(event.key)) {
-      this.selectColour(Number(event.key) - 1);
-    } else if (!modifier && event.key.toLowerCase() === 'x') {
-      this.setMode(this.mode === 'swap' ? 'paint' : 'swap');
-    } else if (!modifier && !event.altKey && event.key.toLowerCase() === 'c') {
-      this.clear();
-    } else if (!modifier && !event.altKey && event.key.toLowerCase() === 's') {
-      event.preventDefault();
-      if (!event.repeat) this.save();
-    } else if (event.key === 'Escape') {
-      this.swapSource = null;
-      this.updateCanvasCursor();
-    }
   }
   save() {
-    if (!this.ready) return;
-    this.endStroke();
-    // Export only the painting; hover and swap-selection overlays are omitted.
-    renderArtwork(false);
+    renderArtwork();
     saveCanvas(this.canvas, 'my-mondrian-composition', 'png');
   }
-  setReady(ready) {
-    if (ready === this.ready) return;
-    this.ready = ready;
-    this.updateCanvasCursor();
-  }
-  updateCanvasCursor() {
-    this.canvas.style.cursor = this.ready ? 'crosshair' : 'wait';
-  }
-  regionAt(point) { return this.regions.find(r => r.contains(point.x, point.y)) || null; }
-  pointFromEvent(event) {
-    const bounds = this.canvas.getBoundingClientRect();
-    return { x: (event.clientX - bounds.left) / bounds.width * GRID_SIZE,
-      y: (event.clientY - bounds.top) / bounds.height * GRID_SIZE };
-  }
-  pointerDown(event) {
-    if (!this.ready || event.button !== 0 || this.strokeStart) return;
-    event.preventDefault();
-    const point = this.pointFromEvent(event), region = this.regionAt(point);
-    if (!region) return;
-    if (this.mode === 'swap' || event.shiftKey) { this.swap(region); return; }
-    this.swapSource = null;
-    this.canvas.setPointerCapture(event.pointerId);
-    this.activePointer = event.pointerId;
-    this.strokeStart = this.snapshot();
-    this.previousPoint = point;
-    region.colour = this.selectedColour;
-  }
-  pointerMove(event) {
-    const point = this.pointFromEvent(event);
-    this.hovered = this.ready ? this.regionAt(point) : null;
-    if (!this.strokeStart || event.pointerId !== this.activePointer) return;
-    // Sample between pointer events so fast drags also paint narrow regions.
-    const previous = this.previousPoint, distance = Math.hypot(point.x - previous.x, point.y - previous.y);
-    const steps = Math.max(1, Math.ceil(distance / 2));
-    for (let step = 1; step <= steps; step++) {
-      const t = step / steps;
-      const region = this.regionAt({ x: previous.x + (point.x - previous.x) * t,
-        y: previous.y + (point.y - previous.y) * t });
-      if (region) region.colour = this.selectedColour;
+  keyDown(event) {
+    if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName) || event.target.isContentEditable) return;
+    const key = event.key.toLowerCase();
+    const modifier = event.ctrlKey || event.metaKey;
+    if (modifier && key === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) this.redo();
+      else this.undo();
+    } else if (modifier && key === 'y') {
+      event.preventDefault();
+      this.redo();
+    } else if (!modifier && !event.altKey && key === 'c') {
+      resetComposition();
+    } else if (!modifier && !event.altKey && key === 's' && !event.repeat) {
+      event.preventDefault();
+      this.save();
     }
-    this.previousPoint = point;
   }
-  endStroke() {
-    const before = this.strokeStart;
-    this.strokeStart = null;
-    this.previousPoint = null;
-    this.activePointer = null;
-    if (before) this.recordChange(before);
-  }
-  draw(showHover = true) {
-    for (const region of this.regions) region.draw();
-    if (showHover && this.hovered) this.hovered.draw('rgba(0, 0, 0, 0.07)');
-    if (showHover && this.swapSource) this.swapSource.draw('rgba(234, 198, 64, 0.4)');
+  display() { for (const block of this.blocks) block.display(); }
+}
+
+// p5.js supplies mouseX/mouseY in canvas coordinates, including CSS scaling.
+function mousePressed() {
+  if (mouseButton !== LEFT) return;
+  if (mouseX >= 0 && mouseX < width && mouseY >= 0 && mouseY < height) {
+    inputControls.handleClick(mouseX, mouseY);
+    return false;
   }
 }
+function resetComposition() { inputControls.reset(); }
 </script>
   <script>// Independent User input prototype by Jinsa Bai, implemented with ChatGPT assistance.
-// setup/draw only assemble the input mechanic and its own static test grid.
+// Main sketch assembles the mechanic and displays only its square canvas.
 let inputControls;
 function setup() {
   const canvas = createCanvas(500, 500);
   canvas.parent('canvas-holder');
   pixelDensity(1);
   inputControls = new InputControls(canvas.elt);
-  inputControls.setReady(true);
 }
 function draw() { renderArtwork(); }
-function renderArtwork(showHover = true) {
+function renderArtwork() {
   background('#171817');
-  inputControls.draw(showHover);
+  inputControls.display();
 }
 </script>
 </body>
