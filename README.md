@@ -7,7 +7,7 @@ Rather than display a finished copy, we turn the composition into a process: wat
 
 3. Mechanic ownership
 CHUNG-EN CHEN	Time-based	Develops progressive grid drawing, stroke order, drawing speed and pauses. 
-	User input	
+Jinsa Bai	User input	Develops colour selection, click-depth filling, erasing and undo/redo on the shared canvas.
 	Perlin noise and randomness	
 	Audio	
 
@@ -25,13 +25,16 @@ This branch integrates Jinsa Bai's mechanic into CHUNG-EN CHEN's existing `time-
 
 ### Run and interaction
 
-Download [jinsa-team-grid.html](jinsa-team-grid.html) and open it in a browser. It is a self-contained copy of the integrated team canvas. Both the root `index.html` and the existing project's `index.html` run the same canvas. The page displays one square only.
+Download [jinsa-team-grid.html](jinsa-team-grid.html) and open it in a browser. It is a self-contained copy of the integrated team canvas. Both the root `index.html` and the existing project's `index.html` run the same canvas. The page displays the square artwork and, after the line sequence, a row of seven colour swatches underneath it.
 
 - The original black strokes draw one at a time, at their original positions, speed and pauses. The original dark-gold frame remains.
-- Once all strokes have finished, click a cell. Each of the 20 cells has its own distinct, fixed red, yellow or blue-family colour.
-- One click produces a pale tint. Repeated clicks deepen the same colour, up to the eighth click. Later clicks retain the darkest shade and still increase its count.
-- Each new shade fills upward within the existing cell in about 0.35 seconds. Clicking a divider, frame or outside the canvas changes nothing.
-- Optional shortcuts: Ctrl/⌘ Z undo, Ctrl/⌘ Shift Z or Ctrl/⌘ Y redo, C clear colours, S save PNG. No on-page text, palette or buttons.
+- Once all strokes have finished, the canvas cursor becomes a pointer and the palette appears. Click a swatch or press its number to select it. A gold outline highlights the selection; red is selected initially.
+- Keys **1–7**, in order: red, yellow, blue, navy, light blue, near black, white eraser.
+- Click any of the 20 cells to paint it with a pale tint of the selected colour. Repeat the same colour to deepen it through eight levels. At level eight, additional same-colour clicks change neither the count nor undo history.
+- Choose a different colour and click that cell to replace its colour, starting again at level one. Each cell stores its own colour and depth.
+- Each shade fills upward within the existing cell in about 0.35 seconds. Same-colour rapid clicks keep an unfinished fill moving. A different colour starts a new rising fill while preserving the part already painted underneath it. Clicking a divider, frame or outside the canvas changes nothing.
+- White acts as an eraser: click a coloured cell to fill it with white and reset its depth. Erasing an already blank cell has no effect or undo entry.
+- Shortcuts: Ctrl/⌘ Z undo, Ctrl/⌘ Shift Z or Ctrl/⌘ Y redo, C clear colours without replaying lines, S save the artwork canvas as PNG. The page has no visible headings or instruction text.
 
 ### Code structure and ownership
 
@@ -45,10 +48,10 @@ All 14 presentation techniques are used and labelled in the source:
 |---|---|---|
 | 1 | `setup()` | Creates the team's single canvas and prepares its lines and colour objects. |
 | 2 | `draw()` | Updates the input fill and runs the team's line sequence. |
-| 3 | `mousePressed()` | Sends a left press to the controller. |
+| 3 | `mousePressed()` | Sends a left canvas press to the controller. Swatch clicks and number keys choose a colour. |
 | 4 | `if / else` | Returns white for zero clicks, otherwise calculates colour depth. |
 | 5 | Comparisons and logic | `>`, `<`, `===`, `&&`, `\|\|` test progress, counts, boundaries and dividers. |
-| 6 | Variables | Each block stores `clickCount`, `currentHeight`, `targetHeight`. |
+| 6 | Variables | Each block stores `clickCount`, `currentHeight`, `targetHeight` and its selected colour. |
 | 7 | Custom functions | `createSharedRegions()`, `createBlock()` and `resetComposition()`. |
 | 8 | Array | `blocks = []` stores the 20 cells. |
 | 9 | `push()` | Adds a new cell object. |
@@ -60,9 +63,9 @@ All 14 presentation techniques are used and labelled in the source:
 
 ### AI acknowledgement and references
 
-ChatGPT (OpenAI) assisted with generating and explaining the user-input mechanic, deriving the shared cell bounds, integrating drawing order, tests and documentation. Source comments also acknowledge this help. Each cell blends white toward its own fixed RGB colour using `Math.min(clickCount, 8) / 8`. Its height state animates that shade upward. Snapshots restore counts and therefore colour depth for undo/redo.
+ChatGPT (OpenAI) assisted with generating and explaining the user-input mechanic, deriving the shared cell bounds, integrating drawing order, colour selection, tests and documentation. Source comments also acknowledge this help. Each cell blends white toward its chosen RGB colour using `Math.min(clickCount, 8) / 8`. Its height state animates that shade upward. Temporary layers preserve earlier painted areas when another colour interrupts a fill. Undo/redo snapshots store both the cell's colour index and click count; restores render that saved colour and depth.
 
-The team source is retained and attributed. This interpretation of Mondrian's painting preserves the shared geometry but assigns 20 distinct colour shades. The stroke order is the team's interpretation, not a reconstruction of Mondrian's historical painting process.
+The team source is retained and attributed. This interpretation of Mondrian's painting preserves the shared geometry and allows visitors to choose each cell's colour and depth. The stroke order is the team's interpretation, not a reconstruction of Mondrian's historical painting process.
 
 - Original team branch: https://github.com/bjsss400-dot/9103-AAAAA1/tree/time-based
 - p5.js input reference: https://p5js.org/reference/p5/mousePressed/
@@ -70,10 +73,10 @@ The team source is retained and attributed. This interpretation of Mondrian's pa
 
 ### Validation and pilot
 
-Run `node tests/user-input.test.cjs`. These tests use the actual teammate module and both integrated modules with a minimal p5/DOM adapter. They check one canvas, the unchanged team module, the completed-grid input gate, 20 distinct fixed colours, progressive depth, boundary rejection, history and matching offline source. They are logic checks, not browser testing.
+Run `node tests/user-input.test.cjs`. These tests use the actual teammate module and both integrated modules with a minimal p5/DOM adapter. They check one canvas, the unchanged team module, palette timing and highlighting, all seven selection shortcuts, depth limits, colour changes, erasing, boundary rejection, colour/depth history and matching offline source. They are logic checks, not browser testing.
 
-With `@napi-rs/canvas`, run `RENDER_PREVIEW=1 node tests/user-input.test.cjs` to verify rendered colours, black lines and the gold frame and recreate the PNG. The pilot below renders actual callback invocations. The GIF illustrates repeated clicks on all 20 cells, not automatic colouring in the webpage.
+With `@napi-rs/canvas`, run `RENDER_PREVIEW=1 node tests/user-input.test.cjs` to verify rendered colours, interrupted fills, white erasing, black lines and the gold frame and recreate the PNG. The pilot below renders actual callback invocations. The GIF selects paint colours using number keys and illustrates repeated clicks on all 20 cells; colouring in the webpage requires user input.
 
 ![Team grid with Jinsa's clicked colours](preview/jinsa-demo.png)
 
-![Repeated clicks deepen fixed colours within the original team grid](preview/jinsa-depth-demo.gif)
+![Repeated clicks deepen chosen colours within the original team grid](preview/jinsa-depth-demo.gif)

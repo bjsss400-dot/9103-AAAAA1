@@ -1,9 +1,34 @@
-/* ChatGPT-assisted styling: display only the artwork canvas. */
+/* ChatGPT-assisted styling: one square canvas and a row of colour swatches. */
 html, body { margin: 0; padding: 0; background: white; }
-#canvas-holder { width: min(500px, 100vw, 100dvh); }
+#canvas-holder, #colour-palette { width: min(500px, 100vw, calc(100dvh - 64px)); }
 #canvas-holder canvas {
   display: block;
   width: 100% !important;
   height: auto !important;
   touch-action: none;
+}
+#colour-palette {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  padding: 12px 6px 6px;
+}
+#colour-palette[hidden] { display: none; }
+.colour-swatch {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 46px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #777;
+  border-radius: 0;
+  cursor: pointer;
+}
+.colour-swatch[aria-pressed="true"] {
+  outline: 3px solid #a68950;
+  outline-offset: 2px;
+}
+.colour-swatch:focus-visible {
+  box-shadow: inset 0 0 0 3px white, inset 0 0 0 5px #171819;
 }
