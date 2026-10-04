@@ -29,7 +29,7 @@ Download [jinsa-square-only.html](jinsa-square-only.html) and open it in a brows
 
 ### Interaction instructions
 
-- Click a block directly to change its colour. Each block follows **white → red → yellow → blue → white** independently. Its new colour fills upward inside that region in approximately 0.35 seconds after a click.
+- Each of the 17 blocks has a different fixed colour in a red, yellow or blue family. The first click produces a pale tint; each further click deepens that same colour. Eight clicks reach its darkest shade, and further clicks keep that shade while still recording the click count. There is no colour cycling. Each new shade fills upward inside its block in approximately 0.35 seconds.
 - Each press changes exactly one block once. Clicking a black divider or outside the canvas does nothing.
 - Colour choices require no palette, keyboard selection, labels or buttons. There is no drag painting or swap mode.
 - Optional keyboard controls: **Ctrl/⌘ + Z** to undo, **Ctrl/⌘ + Shift + Z** or **Ctrl/⌘ + Y** to redo, **C** to clear, and **S** to save a 500 × 500 PNG.
@@ -45,8 +45,8 @@ All 14 presentation techniques are actually called, with numbered comments in th
 | 1 | `setup()` | Creates the single 500 × 500 square canvas and controller. |
 | 2 | `draw()` | Calls update and draws the same canvas every frame. |
 | 3 | `mousePressed()` | Passes a left click to the region hit test. |
-| 4 | `if / else` | Advances the colour index or returns it to white. |
-| 5 | `>`, `<`, `===`, `&&`, `\|\|` | Tests growth, colour-cycle end, and canvas/region boundaries. |
+| 4 | `if / else` | Returns paper for zero clicks; otherwise calculates colour depth from the count. |
+| 5 | `>`, `<`, `===`, `&&`, `\|\|` | Tests growth, zero-click state, and canvas/region boundaries. |
 | 6 | `clickCount`, `currentHeight`, `targetHeight` | Stores each block's click count and fill progress. |
 | 7 | Custom functions | `createBlock()` creates objects; `resetComposition()` clears via C. |
 | 8 | Arrays | `blocks = []` stores all existing regions. |
@@ -61,7 +61,7 @@ All 14 presentation techniques are actually called, with numbered comments in th
 
 ### AI and external references
 
-ChatGPT (OpenAI) assisted in generating and explaining the user-input code, test layout, click cycling, upward colour filling, history, tests and these notes. Assistance is also acknowledged in the JavaScript and CSS files. A hit test identifies the block under the click, its colour index advances through a fixed array, and snapshots restore colours and click counts for undo/redo. The contributor should review and understand the code before assessment.
+ChatGPT (OpenAI) assisted in generating and explaining the user-input code, test layout, fixed colours, progressive colour depth, upward colour filling, history, tests and these notes. Assistance is also acknowledged in the JavaScript and CSS files. A hit test identifies the block under the click, its click count blends paper towards its own fixed RGB colour, and snapshots restore click counts (and therefore colour depth) for undo/redo. The contributor should review and understand the code before assessment.
 
 - p5.js mouse input: https://p5js.org/reference/p5/mousePressed/
 - p5.js reference: https://p5js.org/reference/ — canvas, colour fills, rectangles and PNG export. The library is bundled locally.
@@ -69,6 +69,6 @@ ChatGPT (OpenAI) assisted in generating and explaining the user-input code, test
 
 ### Validation
 
-Run `node tests/user-input.test.cjs`. Tests invoke the actual p5 callbacks with a minimal DOM/drawing adapter and check click cycling, actual grow/update progress and fill boundaries, independent blocks, divider/outside rejection, undo/redo, reset, export and both canvas-only entry pages. These are logic tests, not a full browser test. To also render the demonstration PNG, install `@napi-rs/canvas` in your test environment and run `RENDER_PREVIEW=1 node tests/user-input.test.cjs`.
+Run `node tests/user-input.test.cjs`. Tests invoke the actual p5 callbacks with a minimal DOM/drawing adapter and check 17 distinct fixed colours, progressively darker shades, the eight-click limit, actual grow/update progress and fill boundaries, independent blocks, divider/outside rejection, undo/redo, reset, export and both canvas-only entry pages. These are logic tests, not a full browser test. To also render the demonstration PNG, install `@napi-rs/canvas` in your test environment and run `RENDER_PREVIEW=1 node tests/user-input.test.cjs`.
 
 ![Composition created by clicking individual blocks](preview/jinsa-demo.png)

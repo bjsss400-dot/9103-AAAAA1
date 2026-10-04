@@ -28,7 +28,17 @@ html, body { margin: 0; padding: 0; background: white; }
 // AI assisted with hit testing, click-triggered colour filling, history and structure.
 // p5.js mouse input reference: https://p5js.org/reference/p5/mousePressed/
 // The standalone test layout is independent of teammate scripts.
-const COLOUR_CYCLE = ['#f8f6ef', '#c83b32', '#eac640', '#24568b'];
+const PAPER_COLOUR = [248, 246, 239];
+const MAX_SHADE_CLICKS = 8;
+// One distinct, fixed RGB colour per region, within red/yellow/blue families.
+// Clicking changes its depth only; colours are never cycled or reassigned.
+const BLOCK_COLOURS = [
+  [160, 32, 38], [24, 61, 139], [181, 130, 12], [31, 94, 154],
+  [171, 49, 25], [153, 21, 34], [26, 77, 119], [165, 138, 22],
+  [140, 43, 59], [35, 50, 127], [19, 92, 137], [185, 149, 26],
+  [182, 37, 52], [37, 79, 151], [158, 108, 17], [157, 55, 28],
+  [175, 153, 35]
+];
 const GRID_SIZE = 500;
 const GRID_GAP = 6;
 
@@ -52,12 +62,12 @@ class ColourBlock {
     this.y = y + GRID_GAP / 2;
     this.w = w - GRID_GAP;
     this.h = h - GRID_GAP;
-    this.colorIndex = 0;
+    this.baseColour = BLOCK_COLOURS[id % BLOCK_COLOURS.length];
     this.clickCount = 0;
     // [6] Instance variables record input and the height of its colour fill.
     this.currentHeight = this.h;
     this.targetHeight = this.h;
-    this.baseColorIndex = 0;
+    this.previousClickCount = 0;
   }
   // [12] contains() checks whether a mouse press is inside this region.
   contains(x, y) {
@@ -66,16 +76,21 @@ class ColourBlock {
   }
   // [12] grow() is started only by a click; there are no automatic colour events.
   grow() {
-    this.baseColorIndex = this.colorIndex;
+    this.previousClickCount = this.clickCount;
     this.clickCount++;
-    // [4, 5] if / else and === wrap the four-colour cycle.
-    if (this.colorIndex === COLOUR_CYCLE.length - 1) {
-      this.colorIndex = 0;
-    } else {
-      this.colorIndex++;
-    }
     this.currentHeight = 0;
     this.targetHeight = this.h;
+  }
+  // Blend paper into this block's fixed colour, in eight depth steps.
+  colourAt(count) {
+    // [4, 5] if / else and === separate untouched paper from coloured blocks.
+    if (count === 0) {
+      return PAPER_COLOUR;
+    } else {
+      const strength = Math.min(count, MAX_SHADE_CLICKS) / MAX_SHADE_CLICKS;
+      return this.baseColour.map((channel, index) =>
+        Math.round(PAPER_COLOUR[index] + (channel - PAPER_COLOUR[index]) * strength));
+    }
   }
   // [12] update() advances the click-triggered fill, contained inside this block.
   update() {
@@ -91,19 +106,18 @@ class ColourBlock {
     }
   }
   reset() {
-    this.colorIndex = 0;
     this.clickCount = 0;
-    this.baseColorIndex = 0;
+    this.previousClickCount = 0;
     this.currentHeight = this.h;
     this.targetHeight = this.h;
   }
   // [12] display() draws the previous colour and the rising new colour.
   display() {
     noStroke();
-    fill(COLOUR_CYCLE[this.baseColorIndex]);
+    fill(...this.colourAt(this.previousClickCount));
     rect(this.x * width / GRID_SIZE, this.y * height / GRID_SIZE,
       this.w * width / GRID_SIZE, this.h * height / GRID_SIZE);
-    fill(COLOUR_CYCLE[this.colorIndex]);
+    fill(...this.colourAt(this.clickCount));
     rect(this.x * width / GRID_SIZE,
       (this.y + this.h - this.currentHeight) * height / GRID_SIZE,
       this.w * width / GRID_SIZE, this.currentHeight * height / GRID_SIZE);
@@ -127,13 +141,12 @@ class InputControls {
     document.addEventListener('keydown', event => this.keyDown(event));
   }
   snapshot() {
-    return this.blocks.map(block => ({ colorIndex: block.colorIndex, clickCount: block.clickCount }));
+    return this.blocks.map(block => ({ clickCount: block.clickCount }));
   }
   restore(states) {
     for (let i = 0; i < this.blocks.length; i++) {
-      this.blocks[i].colorIndex = states[i].colorIndex;
       this.blocks[i].clickCount = states[i].clickCount;
-      this.blocks[i].baseColorIndex = states[i].colorIndex;
+      this.blocks[i].previousClickCount = states[i].clickCount;
       this.blocks[i].currentHeight = this.blocks[i].h;
       this.blocks[i].targetHeight = this.blocks[i].h;
     }
@@ -158,7 +171,7 @@ class InputControls {
     }
   }
   reset() {
-    if (!this.blocks.some(block => block.colorIndex !== 0 || block.clickCount !== 0)) return;
+    if (!this.blocks.some(block => block.clickCount > 0)) return;
     const before = this.snapshot();
     for (const block of this.blocks) block.reset();
     this.recordChange(before);
