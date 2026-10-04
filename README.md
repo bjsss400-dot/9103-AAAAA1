@@ -19,60 +19,61 @@ ChatGPT (OpenAI) assisted with generating the initial prototype, explaining its 
 6. Interaction instructions
 
 
-## Jinsa — independent User input prototype
+## Jinsa — User input on the team canvas
 
-The `jinsa` branch starts from `main`, independently of `time-based`. It contains an independent user-input mechanic and a separately designed static Mondrian-inspired test grid. No teammate JavaScript is imported or modified. The test layout is an interpretation, not a faithful reproduction of the painting or the final shared grid.
+This branch integrates Jinsa Bai's mechanic into CHUNG-EN CHEN's existing `time-based` project, at commit `74b40016646d89bb7f9f8483ca461c6fd8117b87`. That original project contains 14 strokes enclosing **20 cells**. The existing `9103 creative coding/time-lines.js` is preserved byte for byte. `perlin-noise-okun` pointed to that same commit when checked, so its separate mechanic was not yet present in GitHub.
 
-### Run
+### Run and interaction
 
-Download [jinsa-colour-depth-v2.html](jinsa-colour-depth-v2.html) and open it in a browser. This self-contained offline preview displays **only the square canvas**. For development, open `index.html` with the bundled `libraries/p5.min.js`, or run `python -m http.server 8000`.
+Download [jinsa-team-grid.html](jinsa-team-grid.html) and open it in a browser. It is a self-contained copy of the integrated team canvas. Both the root `index.html` and the existing project's `index.html` run the same canvas. The page displays one square only.
 
-### Interaction instructions
+- The original black strokes draw one at a time, at their original positions, speed and pauses. The original dark-gold frame remains.
+- Once all strokes have finished, click a cell. Each of the 20 cells has its own distinct, fixed red, yellow or blue-family colour.
+- One click produces a pale tint. Repeated clicks deepen the same colour, up to the eighth click. Later clicks retain the darkest shade and still increase its count.
+- Each new shade fills upward within the existing cell in about 0.35 seconds. Clicking a divider, frame or outside the canvas changes nothing.
+- Optional shortcuts: Ctrl/⌘ Z undo, Ctrl/⌘ Shift Z or Ctrl/⌘ Y redo, C clear colours, S save PNG. No on-page text, palette or buttons.
 
-- Each of the 17 blocks has a different fixed colour in a red, yellow or blue family. The first click produces a pale tint; each further click deepens that same colour. Eight clicks reach its darkest shade, and further clicks keep that shade while still recording the click count. There is no colour cycling. Each new shade fills upward inside its block in approximately 0.35 seconds.
-- Each press changes exactly one block once. Clicking a black divider or outside the canvas does nothing.
-- Colour choices require no palette, keyboard selection, labels or buttons. There is no drag painting or swap mode.
-- Optional keyboard controls: **Ctrl/⌘ + Z** to undo, **Ctrl/⌘ + Shift + Z** or **Ctrl/⌘ + Y** to redo, **C** to clear, and **S** to save a 500 × 500 PNG.
+### Code structure and ownership
 
-### Structure and techniques
+CHUNG-EN CHEN owns the original time-based line sequence and frame. Jinsa Bai owns `9103 creative coding/user-input.js` and the colour-input integration. The original `sketch.js` now assembles both modules on its single 500 × 500 canvas. This version integrates time-based and user-input mechanics only. Audio and the noise mechanic still require team integration.
 
-`user-input.js` contains the mechanic. `sketch.js` creates one canvas and calls the controller's update and display methods. Colour changes start only when a region is clicked; there are no scheduled changes, audio or noise mechanics. The animation stays inside the existing region and leaves the black dividers fixed. Plant examples from the presentation are adapted to `ColourBlock` objects, not additional plant drawings.
+`createSharedRegions(lines, Thickness)` derives the 20 cell bounds from the team's 320-unit line coordinates. These replace Jinsa's earlier independent 17-cell layout. The drawing loop paints colours below the visible black lines and repaints completed and active strokes before advancing the original animation. The original last-frame stroke lengths and gold frame are retained.
 
-All 14 presentation techniques are actually called, with numbered comments in the source:
+All 14 presentation techniques are used and labelled in the source:
 
-| # | Technique | Use in this artwork |
+| # | Technique | Use |
 |---|---|---|
-| 1 | `setup()` | Creates the single 500 × 500 square canvas and controller. |
-| 2 | `draw()` | Calls update and draws the same canvas every frame. |
-| 3 | `mousePressed()` | Passes a left click to the region hit test. |
-| 4 | `if / else` | Returns paper for zero clicks; otherwise calculates colour depth from the count. |
-| 5 | `>`, `<`, `===`, `&&`, `\|\|` | Tests growth, zero-click state, and canvas/region boundaries. |
-| 6 | `clickCount`, `currentHeight`, `targetHeight` | Stores each block's click count and fill progress. |
-| 7 | Custom functions | `createBlock()` creates objects; `resetComposition()` clears via C. |
-| 8 | Arrays | `blocks = []` stores all existing regions. |
-| 9 | `push()` | Adds each new block to the array. |
+| 1 | `setup()` | Creates the team's single canvas and prepares its lines and colour objects. |
+| 2 | `draw()` | Updates the input fill and runs the team's line sequence. |
+| 3 | `mousePressed()` | Sends a left press to the controller. |
+| 4 | `if / else` | Returns white for zero clicks, otherwise calculates colour depth. |
+| 5 | Comparisons and logic | `>`, `<`, `===`, `&&`, `\|\|` test progress, counts, boundaries and dividers. |
+| 6 | Variables | Each block stores `clickCount`, `currentHeight`, `targetHeight`. |
+| 7 | Custom functions | `createSharedRegions()`, `createBlock()` and `resetComposition()`. |
+| 8 | Array | `blocks = []` stores the 20 cells. |
+| 9 | `push()` | Adds a new cell object. |
 | 10 | `for...of` | Finds, updates and displays blocks. |
-| 11 | Class, constructor, `new` | `class ColourBlock`, `constructor()` and `new ColourBlock()`. |
-| 12 | Class methods | `contains()` tests clicks; `grow()` starts filling; `update()` advances it; `display()` renders it. |
-| 13 | Global/local variables | Global `inputControls`; local canvas, grid coordinates, frame time and speed. |
-| 14 | Separate script | `user-input.js`, loaded before `sketch.js`. |
+| 11 | Class, constructor, new | `ColourBlock`, `constructor()`, `new ColourBlock()`. |
+| 12 | Methods | `contains()`, `grow()`, `update()`, `display()`. |
+| 13 | Global and local | Global `inputControls`; local grid positions and growth speed; click count and height are object state. |
+| 14 | Separate script | `user-input.js`, combined with `time-lines.js` by `sketch.js`. |
 
-**Ownership:** Jinsa Bai — User input, implemented with AI assistance. The static layout tests this individual contribution; team integration can pass shared region data to the constructor.
+### AI acknowledgement and references
 
-### AI and external references
+ChatGPT (OpenAI) assisted with generating and explaining the user-input mechanic, deriving the shared cell bounds, integrating drawing order, tests and documentation. Source comments also acknowledge this help. Each cell blends white toward its own fixed RGB colour using `Math.min(clickCount, 8) / 8`. Its height state animates that shade upward. Snapshots restore counts and therefore colour depth for undo/redo.
 
-ChatGPT (OpenAI) assisted in generating and explaining the user-input code, test layout, fixed colours, progressive colour depth, upward colour filling, history, tests and these notes. Assistance is also acknowledged in the JavaScript and CSS files. A hit test identifies the block under the click, its click count blends paper towards its own fixed RGB colour, and snapshots restore click counts (and therefore colour depth) for undo/redo. The contributor should review and understand the code before assessment.
+The team source is retained and attributed. This interpretation of Mondrian's painting preserves the shared geometry but assigns 20 distinct colour shades. The stroke order is the team's interpretation, not a reconstruction of Mondrian's historical painting process.
 
-- p5.js mouse input: https://p5js.org/reference/p5/mousePressed/
-- p5.js reference: https://p5js.org/reference/ — canvas, colour fills, rectangles and PNG export. The library is bundled locally.
-- Piet Mondrian's painting, named in Inspiration, informs the palette and unequal rectangular areas. The standalone layout was created separately for this mechanic.
+- Original team branch: https://github.com/bjsss400-dot/9103-AAAAA1/tree/time-based
+- p5.js input reference: https://p5js.org/reference/p5/mousePressed/
+- p5.js reference: https://p5js.org/reference/ — drawing, frame updates, canvas coordinates and export.
 
-### Validation
+### Validation and pilot
 
-Run `node tests/user-input.test.cjs`. Tests invoke the actual p5 callbacks with a minimal DOM/drawing adapter and check 17 distinct fixed colours, progressively darker shades, the eight-click limit, actual grow/update progress and fill boundaries, independent blocks, divider/outside rejection, undo/redo, reset, export and both canvas-only entry pages. These are logic tests, not a full browser test. To also render the demonstration PNG, install `@napi-rs/canvas` in your test environment and run `RENDER_PREVIEW=1 node tests/user-input.test.cjs`.
+Run `node tests/user-input.test.cjs`. These tests use the actual teammate module and both integrated modules with a minimal p5/DOM adapter. They check one canvas, the unchanged team module, the completed-grid input gate, 20 distinct fixed colours, progressive depth, boundary rejection, history and matching offline source. They are logic checks, not browser testing.
 
-![Composition created by clicking individual blocks](preview/jinsa-demo.png)
+With `@napi-rs/canvas`, run `RENDER_PREVIEW=1 node tests/user-input.test.cjs` to verify rendered colours, black lines and the gold frame and recreate the PNG. The pilot below renders actual callback invocations. The GIF illustrates repeated clicks on all 20 cells, not automatic colouring in the webpage.
 
-The animation below renders the actual click handler: every block is clicked once, then repeatedly up to eight times. Each keeps its fixed colour as its shade deepens. It illustrates interaction; it is not an automatic effect in the webpage.
+![Team grid with Jinsa's clicked colours](preview/jinsa-demo.png)
 
-![Actual blocks progressively deepen with repeated clicks](preview/jinsa-depth-demo.gif)
+![Repeated clicks deepen fixed colours within the original team grid](preview/jinsa-depth-demo.gif)

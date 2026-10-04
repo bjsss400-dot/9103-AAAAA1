@@ -2,8 +2,8 @@
 // [14] user-input.js is the independent mechanic; sketch.js assembles it.
 // AI assisted with hit testing, click-triggered colour filling, history and structure.
 // p5.js mouse input reference: https://p5js.org/reference/p5/mousePressed/
-// The standalone test layout is independent of teammate scripts.
-const PAPER_COLOUR = [248, 246, 239];
+// This mechanic uses the 20 cells defined by the team time-based branch.
+const PAPER_COLOUR = [255, 255, 255];
 const MAX_SHADE_CLICKS = 8;
 // One distinct, fixed RGB colour per region, within red/yellow/blue families.
 // Clicking changes its depth only; colours are never cycled or reassigned.
@@ -12,31 +12,62 @@ const BLOCK_COLOURS = [
   [171, 49, 25], [153, 21, 34], [26, 77, 119], [165, 138, 22],
   [140, 43, 59], [35, 50, 127], [19, 92, 137], [185, 149, 26],
   [182, 37, 52], [37, 79, 151], [158, 108, 17], [157, 55, 28],
-  [175, 153, 35]
+  [175, 153, 35], [146, 64, 42], [18, 105, 117], [195, 115, 24]
 ];
-const GRID_SIZE = 500;
-const GRID_GAP = 6;
+const GRID_SIZE = 320;
+const FRAME_THICKNESS = 4;
 
-// Unequal rectangles in a separately designed Mondrian-inspired test composition.
-// Each entry is [x, y, width, height]. All interactions remain inside the square.
-const INPUT_LAYOUT = [
-  [0, 0, 80, 110], [80, 0, 230, 110], [310, 0, 110, 110],
-  [420, 0, 80, 340], [0, 110, 130, 230], [130, 110, 180, 230],
-  [310, 110, 55, 130], [365, 110, 55, 130],
-  [310, 240, 55, 100], [365, 240, 55, 100],
-  [0, 340, 130, 160], [130, 340, 180, 90], [130, 430, 180, 70],
-  [310, 340, 110, 90], [310, 430, 110, 35], [310, 465, 110, 35],
-  [420, 340, 80, 160]
-];
+// Cell bounds come from the team's existing 14 line objects, in 320-unit space.
+// Black strokes start at x/y and occupy Thickness units, rather than being centred.
+function createSharedRegions(lineData, thickness) {
+  const top = lineData[0].y;
+  const left = lineData[1].x;
+  const main = lineData[2].x;
+  const right = lineData[3].x;
+  const middle = lineData[4].y;
+  const topSplit = lineData[5].x;
+  const leftUpper = lineData[6].y;
+  const rightUpper = lineData[7].y;
+  const rightSplit = lineData[8].x;
+  const bottomSplit = lineData[9].x;
+  const leftLower = lineData[10].y;
+  const bottomMiddle = lineData[11].y;
+  const bottomLeft = lineData[12].y;
+  const lowest = lineData[13].y;
+  const t = thickness;
+  function region(x1, y1, x2, y2) { return [x1, y1, x2 - x1, y2 - y1]; }
+  return [
+    region(0, 0, topSplit, top),
+    region(topSplit + t, 0, main, top),
+    region(main + t, 0, right, top),
+    region(right + t, 0, GRID_SIZE, bottomMiddle),
+    region(0, top + t, left, leftUpper),
+    region(left + t, top + t, main, middle),
+    region(main + t, top + t, right, rightUpper),
+    region(main + t, rightUpper + t, rightSplit, middle),
+    region(rightSplit + t, rightUpper + t, right, middle),
+    region(0, leftUpper + t, left, leftLower),
+    region(left + t, middle + t, bottomSplit, bottomLeft),
+    region(bottomSplit + t, middle + t, main, bottomMiddle),
+    region(main + t, middle + t, right, bottomMiddle),
+    region(0, leftLower + t, left, GRID_SIZE),
+    region(bottomSplit + t, bottomMiddle + t, main, bottomLeft),
+    region(main + t, bottomMiddle + t, right, lowest),
+    region(right + t, bottomMiddle + t, GRID_SIZE, GRID_SIZE),
+    region(left + t, bottomLeft + t, bottomSplit, GRID_SIZE),
+    region(bottomSplit + t, bottomLeft + t, main, lowest),
+    region(bottomSplit + t, lowest + t, right, GRID_SIZE)
+  ];
+}
 
 // [11] class, constructor() and new ColourBlock() model each existing region.
 class ColourBlock {
   constructor(id, x, y, w, h) {
     this.id = id;
-    this.x = x + GRID_GAP / 2;
-    this.y = y + GRID_GAP / 2;
-    this.w = w - GRID_GAP;
-    this.h = h - GRID_GAP;
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
     this.baseColour = BLOCK_COLOURS[id % BLOCK_COLOURS.length];
     this.clickCount = 0;
     // [6] Instance variables record input and the height of its colour fill.
@@ -103,7 +134,7 @@ class ColourBlock {
 function createBlock(id, geometry) { return new ColourBlock(id, ...geometry); }
 
 class InputControls {
-  constructor(canvas, layout = INPUT_LAYOUT) {
+  constructor(canvas, layout) {
     this.canvas = canvas;
     this.blocks = []; // [8] An array stores all the existing square-canvas regions.
     this.undoStack = [];
@@ -133,9 +164,19 @@ class InputControls {
   }
   handleClick(canvasX, canvasY) {
     // [5] || rejects a press if any boundary condition is outside the canvas.
-    if (canvasX < 0 || canvasY < 0 || canvasX >= width || canvasY >= height) return;
+    if (!isGridComplete()) return;
+    if (canvasX < FRAME_THICKNESS || canvasY < FRAME_THICKNESS ||
+      canvasX >= width - FRAME_THICKNESS || canvasY >= height - FRAME_THICKNESS) return;
     const gridX = canvasX * GRID_SIZE / width;
     const gridY = canvasY * GRID_SIZE / height;
+    // A divider always wins the hit test, including the team's final stroke length.
+    for (const line of lines) {
+      const length = completedStrokeLength(line);
+      const w = line.type === 'h' ? length : Thickness;
+      const h = line.type === 'v' ? length : Thickness;
+      if (gridX >= line.x && gridX < line.x + w &&
+        gridY >= line.y && gridY < line.y + h) return;
+    }
     for (const block of this.blocks) {
       if (block.contains(gridX, gridY)) {
         const before = this.snapshot();
