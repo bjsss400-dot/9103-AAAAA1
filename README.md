@@ -25,7 +25,9 @@ This branch integrates Jinsa Bai's mechanic into CHUNG-EN CHEN's existing `time-
 
 ### Run and interaction
 
-Download [jinsa-team-grid.html](jinsa-team-grid.html) and open it in a browser. It is a self-contained copy of the integrated team canvas. Both the root `index.html` and the existing project's `index.html` run the same canvas. The page displays the square artwork and, after the line sequence, a row of seven colour swatches underneath it.
+Download [jinsa-colour-palette-v2.html](jinsa-colour-palette-v2.html) and open the downloaded file in a browser. The tab title is **Jinsa — Seven-colour palette v2**. This file contains p5.js, the original line module, the current user-input mechanic and its styles, so it runs without fetching older project files. Wait for all 14 strokes to finish; then the seven colour swatches appear below the square artwork. The updated files are on the **jinsa** branch. The repository's default branch is main.
+
+The root `index.html` and the existing project's `index.html` run the same canvas, with versioned script and stylesheet references. [jinsa-team-grid.html](jinsa-team-grid.html) remains an identical offline copy.
 
 - The original black strokes draw one at a time, at their original positions, speed and pauses. The original dark-gold frame remains.
 - Once all strokes have finished, the canvas cursor becomes a pointer and the palette appears. Click a swatch or press its number to select it. A gold outline highlights the selection; red is selected initially.
