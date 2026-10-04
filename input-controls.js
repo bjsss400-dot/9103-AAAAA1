@@ -66,7 +66,6 @@ class InputControls {
     this.swapSource = null;
     this.undoStack = [];
     this.redoStack = [];
-    this.status = 'Choose a colour, then click or drag to paint.';
     this.activePointer = null;
     canvas.addEventListener('pointerdown', event => this.pointerDown(event));
     canvas.addEventListener('pointermove', event => this.pointerMove(event));
@@ -81,7 +80,7 @@ class InputControls {
     });
     canvas.addEventListener('pointerleave', () => { this.hovered = null; });
     document.addEventListener('keydown', event => this.keyDown(event));
-    this.bindUI();
+    this.updateCanvasCursor();
   }
   snapshot() { return this.regions.map(r => r.colour); }
   restore(colours) { this.regions.forEach((region, i) => { region.colour = colours[i]; }); }
@@ -91,7 +90,7 @@ class InputControls {
       if (this.undoStack.length > 100) this.undoStack.shift();
       this.redoStack = [];
     }
-    this.updateUI();
+    this.updateCanvasCursor();
   }
   selectColour(index) {
     this.selectedColour = INPUT_PALETTE[index].hex;
@@ -101,24 +100,20 @@ class InputControls {
     this.endStroke();
     this.mode = mode;
     this.swapSource = null;
-    this.status = mode === 'swap' ? 'Choose two regions to exchange their colours.' : 'Click or drag across the grid to paint.';
-    this.updateUI();
+    this.updateCanvasCursor();
   }
   swap(region) {
     if (!this.swapSource) {
       this.swapSource = region;
-      this.status = 'Now choose a second region. Esc cancels.';
     } else if (this.swapSource === region) {
       this.swapSource = null;
-      this.status = 'Selection cancelled. Choose two regions.';
     } else {
       const before = this.snapshot();
       [this.swapSource.colour, region.colour] = [region.colour, this.swapSource.colour];
       this.swapSource = null;
       this.recordChange(before);
-      this.status = 'Colours exchanged. Try another pair.';
     }
-    this.updateUI();
+    this.updateCanvasCursor();
   }
   undo() {
     if (!this.ready) return;
@@ -127,8 +122,7 @@ class InputControls {
     this.redoStack.push(this.snapshot());
     this.restore(this.undoStack.pop());
     this.swapSource = null;
-    this.status = 'Last change undone.';
-    this.updateUI();
+    this.updateCanvasCursor();
   }
   redo() {
     if (!this.ready) return;
@@ -137,8 +131,7 @@ class InputControls {
     this.undoStack.push(this.snapshot());
     this.restore(this.redoStack.pop());
     this.swapSource = null;
-    this.status = 'Change restored.';
-    this.updateUI();
+    this.updateCanvasCursor();
   }
   clear() {
     if (!this.ready) return;
@@ -147,8 +140,7 @@ class InputControls {
     this.regions.forEach(region => { region.colour = INPUT_PALETTE[3].hex; });
     this.swapSource = null;
     this.recordChange(before);
-    this.status = 'A fresh canvas. Your previous colours can be restored with Undo.';
-    this.updateUI();
+    this.updateCanvasCursor();
   }
   keyDown(event) {
     if (!this.ready || /INPUT|TEXTAREA|SELECT/.test(event.target.tagName) || event.target.isContentEditable) return;
@@ -162,64 +154,29 @@ class InputControls {
       this.selectColour(Number(event.key) - 1);
     } else if (!modifier && event.key.toLowerCase() === 'x') {
       this.setMode(this.mode === 'swap' ? 'paint' : 'swap');
+    } else if (!modifier && !event.altKey && event.key.toLowerCase() === 'c') {
+      this.clear();
+    } else if (!modifier && !event.altKey && event.key.toLowerCase() === 's') {
+      event.preventDefault();
+      if (!event.repeat) this.save();
     } else if (event.key === 'Escape') {
       this.swapSource = null;
-      this.status = 'Selection cancelled.';
-      this.updateUI();
+      this.updateCanvasCursor();
     }
   }
-  bindUI() {
-    const palette = document.getElementById('palette');
-    INPUT_PALETTE.forEach((colour, index) => {
-      const button = document.createElement('button');
-      button.className = 'swatch';
-      button.dataset.index = index;
-      button.style.backgroundColor = colour.hex;
-      button.setAttribute('aria-label', `Select ${colour.name} (key ${index + 1})`);
-      button.title = `${colour.name} · ${index + 1}`;
-      button.addEventListener('click', () => this.selectColour(index));
-      palette.appendChild(button);
-    });
-    document.getElementById('paint-mode').onclick = () => this.setMode('paint');
-    document.getElementById('swap-mode').onclick = () => this.setMode('swap');
-    document.getElementById('undo').onclick = () => this.undo();
-    document.getElementById('redo').onclick = () => this.redo();
-    document.getElementById('clear').onclick = () => this.clear();
-    document.getElementById('save').onclick = () => {
-      if (!this.ready) return;
-      // Export only the artwork; hover and selection overlays are omitted.
-      renderArtwork(false);
-      saveCanvas(this.canvas, 'my-mondrian-composition', 'png');
-      this.status = 'Your composition has been saved as a PNG.';
-      this.updateUI();
-    };
-    this.updateUI();
+  save() {
+    if (!this.ready) return;
+    this.endStroke();
+    // Export only the painting; hover and swap-selection overlays are omitted.
+    renderArtwork(false);
+    saveCanvas(this.canvas, 'my-mondrian-composition', 'png');
   }
   setReady(ready) {
     if (ready === this.ready) return;
     this.ready = ready;
-    this.status = 'Choose a colour, then click or drag to paint.';
-    this.updateUI();
+    this.updateCanvasCursor();
   }
-  updateUI() {
-    for (const button of document.querySelectorAll('.swatch')) {
-      const selected = INPUT_PALETTE[Number(button.dataset.index)].hex === this.selectedColour;
-      button.classList.toggle('selected', selected);
-      button.setAttribute('aria-pressed', String(selected));
-      button.disabled = !this.ready;
-    }
-    for (const mode of ['paint', 'swap']) {
-      const button = document.getElementById(`${mode}-mode`);
-      button.classList.toggle('selected', this.mode === mode);
-      button.setAttribute('aria-pressed', String(this.mode === mode));
-      button.disabled = !this.ready;
-    }
-    document.getElementById('colour-name').textContent = 'Selected: ' + INPUT_PALETTE.find(c => c.hex === this.selectedColour).name;
-    document.getElementById('undo').disabled = !this.ready || !this.undoStack.length;
-    document.getElementById('redo').disabled = !this.ready || !this.redoStack.length;
-    document.getElementById('clear').disabled = !this.ready;
-    document.getElementById('save').disabled = !this.ready;
-    document.getElementById('status').textContent = this.ready ? this.status : 'Preparing your canvas.';
+  updateCanvasCursor() {
     this.canvas.style.cursor = this.ready ? 'crosshair' : 'wait';
   }
   regionAt(point) { return this.regions.find(r => r.contains(point.x, point.y)) || null; }

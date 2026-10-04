@@ -61,7 +61,9 @@ check('clicking the same swap source cancels without a history entry',()=>{const
 check('clear is reversible',()=>{run('inputControls.clear()');assert.equal(run('inputControls.regions.every(r=>r.colour===INPUT_PALETTE[3].hex)'),true);run('inputControls.undo()');assert.equal(colourAt(170,170),red);});
 check('right clicks and out-of-canvas clicks leave colours unchanged',()=>{const before=JSON.stringify(run('inputControls.snapshot()'));click(40,60,{button:2});click(-20,-20);assert.equal(JSON.stringify(run('inputControls.snapshot()')),before);});
 check('keyboard colour and Escape controls work',()=>{sandbox.e={key:'2',target:{tagName:'BODY'}};run('inputControls.keyDown(e)');assert.equal(run('inputControls.selectedColour'),run('INPUT_PALETTE[1].hex'));run("inputControls.setMode('swap')");click(170,170);sandbox.e={key:'Escape',target:{tagName:'BODY'}};run('inputControls.keyDown(e)');assert.equal(run('inputControls.swapSource'),null);});
-check('PNG button invokes the artwork renderer and export API',()=>{nodes.get('save').onclick();assert.equal(saved,true);});
+check('S key invokes the artwork renderer and PNG export API',()=>{sandbox.e={key:'s',target:{tagName:'BODY'},preventDefault(){}};run('inputControls.keyDown(e)');assert.equal(saved,true);});
+check('C key clears colours and undo restores them',()=>{const before=JSON.stringify(run('inputControls.snapshot()'));sandbox.e={key:'c',target:{tagName:'BODY'}};run('inputControls.keyDown(e)');assert.equal(run('inputControls.regions.every(r=>r.colour===INPUT_PALETTE[3].hex)'),true);run('inputControls.undo()');assert.equal(JSON.stringify(run('inputControls.snapshot()')),before);});
+check('canvas-only mechanic creates no controls or text nodes',()=>{assert.equal(swatches.length,0);assert.equal(nodes.size,0);});
 check('colours are drawn above a black gap background',()=>{
   run("inputControls.setMode('paint');inputControls.selectColour(0)");click(170,170);
   run('renderArtwork(false)');

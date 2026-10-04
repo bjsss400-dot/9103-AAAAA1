@@ -29,16 +29,16 @@ Download [jinsa-preview.html](jinsa-preview.html) and open it in a browser. It i
 
 ### Controls
 
-- Select one of six colours with the palette or **1–6**.
+- Press **1–6** to select red, yellow, blue, white, gray or black. The page displays only the canvas; no palette, buttons, labels or sidebars are added.
 - **Paint:** click a region or hold and drag across several regions.
 - **Swap colours:** select two regions to exchange their colours. **Shift + click** also swaps; **X** switches tools. Click the source again or press **Esc** to cancel.
-- Undo/redo with buttons, **Ctrl/⌘ + Z**, or **Ctrl/⌘ + Shift + Z**. A whole drag is one undo step. A new edit clears redo history.
-- **Clear colours** returns regions to white and can be undone.
-- **Save your composition** exports a 500 × 500 PNG without hover or selection overlays.
+- Undo/redo with **Ctrl/⌘ + Z** or **Ctrl/⌘ + Shift + Z**. A whole drag is one undo step. A new edit clears redo history.
+- **C** returns regions to white and can be undone.
+- **S** exports a 500 × 500 PNG without hover or selection overlays.
 
 ### Structure and techniques
 
-`input-controls.js` contains the entire user-input mechanic: `ColourRegion` stores each region's geometry and colour; `InputControls` handles palette selection, hit testing, pointer capture, drag-path sampling, colour exchanges and snapshot history (up to 100 steps). Mouse/touch coordinates are converted from the canvas's displayed size into the 500 × 500 layout. `sketch.js` only assembles the mechanic and renders the static canvas. Input operates immediately; no time, audio or noise mechanic is implemented in this standalone preview. `index.html` and `style.css` provide accessible controls and a responsive layout.
+`input-controls.js` contains the entire user-input mechanic: `ColourRegion` stores each region's geometry and colour; `InputControls` handles palette selection, hit testing, pointer capture, drag-path sampling, colour exchanges and snapshot history (up to 100 steps). Mouse/touch coordinates are converted from the canvas's displayed size into the 500 × 500 layout. `sketch.js` only assembles the mechanic and renders the static canvas. Input operates immediately; no time, audio or noise mechanic is implemented in this standalone preview. `index.html` and `style.css` display only the responsive canvas. All controls use mouse/keyboard input, and these instructions remain in the README rather than appearing on the artwork.
 
 **Ownership:** Jinsa Bai — User input, implemented with AI assistance. Future team integration should pass shared region data to the constructor and coordinate rendering with the other mechanics; the current independent layout is for testing this contribution.
 

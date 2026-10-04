@@ -1,51 +1,9 @@
-/* ChatGPT-assisted page styling; no external fonts or UI frameworks. */
-:root { color-scheme: light; --paper:#f2efe7; --ink:#20221f; --muted:#71736a; --rule:#d8d6ca; }
-* { box-sizing:border-box; }
-body { margin:0; background:var(--paper); color:var(--ink); font-family:Arial,Helvetica,sans-serif; }
-button { font:inherit; color:inherit; cursor:pointer; }
-button:focus-visible, summary:focus-visible { outline:3px solid #24568b; outline-offset:4px; }
-button:disabled { cursor:default; opacity:.35; }
-.studio { max-width:1040px; padding:48px 44px 24px; margin:auto; }
-.eyebrow { font-size:10px; letter-spacing:2px; font-weight:700; margin:0 0 16px; }
-h1 { font-size:52px; line-height:1.05; font-weight:500; letter-spacing:-2.6px; margin:0 0 14px; }
-h1 span { color:#c83b32; }
-.intro { color:var(--muted); font-size:15px; margin:0; }
-.page-header { padding-bottom:32px; border-bottom:1px solid var(--rule); }
-.workspace { display:grid; grid-template-columns:minmax(0,500px) minmax(250px,1fr); gap:48px; padding-top:30px; align-items:start; }
-.canvas-meta,.canvas-caption { display:flex; justify-content:space-between; gap:10px; font-size:9px; letter-spacing:1px; color:var(--muted); }
-.canvas-meta { margin-bottom:14px; font-weight:700; }
-#canvas-holder { aspect-ratio:1; box-shadow:0 10px 25px #25201512; background:#f8f6ef; }
-#canvas-holder canvas { display:block; width:100% !important; height:auto !important; touch-action:none; }
-.drawing-progress { height:2px; background:var(--rule); margin:14px 0 12px; }
-#progress-fill { display:block; height:100%; width:0%; background:var(--ink); }
-.canvas-caption { letter-spacing:0; font-size:10px; }
-.tools { padding-top:0; }
-.tools .eyebrow { font-size:9px; margin-bottom:12px; color:var(--muted); }
-h2 { font-size:27px; font-weight:500; line-height:1.1; letter-spacing:-.8px; margin:0 0 12px; }
-.tool-intro { font-size:12px; color:var(--muted); line-height:1.6; margin:0 0 24px; }
-.tool-section { border-top:1px solid var(--rule); padding:18px 0; }
-.section-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-h3 { margin:0; font-size:11px; font-weight:600; }
-.section-title span { font-size:9px; color:var(--muted); }
-.palette { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
-.swatch { aspect-ratio:1; border:1px solid #00000012; border-radius:0; position:relative; }
-.swatch.selected { outline:2px solid var(--ink); outline-offset:3px; }
-.swatch.selected:after { content:'✓'; position:absolute; inset:0; display:grid; place-items:center; color:white; font-size:15px; }
-.swatch[data-index="1"]:after,.swatch[data-index="3"]:after,.swatch[data-index="4"]:after { color:#20221f; }
-.small { font-size:10px; line-height:1.8; color:var(--muted); margin:12px 0 0; }
-.mode-controls { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--rule); }
-.mode-controls button { padding:11px 8px; border:0; background:transparent; font-size:11px; }
-.mode-controls button.selected { background:var(--ink); color:#f8f6ef; }
-.history-actions { display:flex; gap:8px; }
-.history-actions button { background:transparent; border:1px solid var(--rule); padding:9px 10px; font-size:10px; }
-.history-actions button:last-child { margin-left:auto; }
-.save-button { width:100%; background:var(--ink); color:#f8f6ef; border:0; padding:15px; font-size:11px; display:flex; justify-content:space-between; }
-.status { color:var(--muted); font-size:10px; line-height:1.7; min-height:34px; margin:15px 0; }
-.shortcuts { font-size:9px; color:var(--muted); line-height:1.8; }
-.shortcuts summary { cursor:pointer; }
-footer { display:flex; justify-content:space-between; border-top:1px solid var(--rule); margin-top:32px; padding-top:18px; font-size:10px; color:var(--muted); }
-footer span { letter-spacing:1px; font-size:9px; }
-@media(max-width:760px) { .studio { padding:28px 22px; max-width:550px; } h1 { font-size:40px; } .workspace { grid-template-columns:1fr; gap:30px; } .tools { padding-top:0; } .palette { max-width:320px; } }
-@media(prefers-reduced-motion:reduce) { * { scroll-behavior:auto; } }
-
-.artwork-rule { height:1px; background:var(--rule); margin:14px 0 12px; }
+/* ChatGPT-assisted styling: display only the artwork canvas. */
+html, body { margin: 0; padding: 0; background: white; }
+#canvas-holder { width: min(500px, 100vw); }
+#canvas-holder canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  touch-action: none;
+}
