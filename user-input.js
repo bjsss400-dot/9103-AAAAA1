@@ -1,5 +1,6 @@
 // User-input mechanic: Jinsa Bai, implemented with ChatGPT (OpenAI) assistance.
-// AI assisted with hit testing, colour cycling, undo/redo and code structure.
+// [14] user-input.js is the independent mechanic; sketch.js assembles it.
+// AI assisted with hit testing, click-triggered colour filling, history and structure.
 // p5.js mouse input reference: https://p5js.org/reference/p5/mousePressed/
 // The standalone test layout is independent of teammate scripts.
 const COLOUR_CYCLE = ['#f8f6ef', '#c83b32', '#eac640', '#24568b'];
@@ -18,6 +19,7 @@ const INPUT_LAYOUT = [
   [420, 340, 80, 160]
 ];
 
+// [11] class, constructor() and new ColourBlock() model each existing region.
 class ColourBlock {
   constructor(id, x, y, w, h) {
     this.id = id;
@@ -27,38 +29,72 @@ class ColourBlock {
     this.h = h - GRID_GAP;
     this.colorIndex = 0;
     this.clickCount = 0;
+    // [6] Instance variables record input and the height of its colour fill.
+    this.currentHeight = this.h;
+    this.targetHeight = this.h;
+    this.baseColorIndex = 0;
   }
+  // [12] contains() checks whether a mouse press is inside this region.
   contains(x, y) {
     return x >= this.x && x < this.x + this.w &&
       y >= this.y && y < this.y + this.h;
   }
-  changeColour() {
+  // [12] grow() is started only by a click; there are no automatic colour events.
+  grow() {
+    this.baseColorIndex = this.colorIndex;
     this.clickCount++;
+    // [4, 5] if / else and === wrap the four-colour cycle.
     if (this.colorIndex === COLOUR_CYCLE.length - 1) {
       this.colorIndex = 0;
     } else {
       this.colorIndex++;
     }
+    this.currentHeight = 0;
+    this.targetHeight = this.h;
   }
-  reset() { this.colorIndex = 0; this.clickCount = 0; }
+  // [12] update() advances the click-triggered fill, contained inside this block.
+  update() {
+    // [5] >, < and && ensure that only an unfinished fill advances.
+    if (this.targetHeight > 0 && this.currentHeight < this.targetHeight) {
+      // [13] Local variables exist only during this update; object state persists.
+      const frameSeconds = Math.min(Math.max(deltaTime, 0), 50) / 1000;
+      const growthSpeed = this.h / 0.35;
+      this.currentHeight = Math.min(this.targetHeight,
+        this.currentHeight + growthSpeed * frameSeconds);
+    } else {
+      this.currentHeight = this.targetHeight;
+    }
+  }
+  reset() {
+    this.colorIndex = 0;
+    this.clickCount = 0;
+    this.baseColorIndex = 0;
+    this.currentHeight = this.h;
+    this.targetHeight = this.h;
+  }
+  // [12] display() draws the previous colour and the rising new colour.
   display() {
     noStroke();
-    fill(COLOUR_CYCLE[this.colorIndex]);
-    // Grid coordinates are scaled to the p5 canvas dimensions.
+    fill(COLOUR_CYCLE[this.baseColorIndex]);
     rect(this.x * width / GRID_SIZE, this.y * height / GRID_SIZE,
       this.w * width / GRID_SIZE, this.h * height / GRID_SIZE);
+    fill(COLOUR_CYCLE[this.colorIndex]);
+    rect(this.x * width / GRID_SIZE,
+      (this.y + this.h - this.currentHeight) * height / GRID_SIZE,
+      this.w * width / GRID_SIZE, this.currentHeight * height / GRID_SIZE);
   }
 }
 
+// [7, 11] Custom factory function creates an instance with new.
 function createBlock(id, geometry) { return new ColourBlock(id, ...geometry); }
 
 class InputControls {
   constructor(canvas, layout = INPUT_LAYOUT) {
     this.canvas = canvas;
-    this.blocks = [];
+    this.blocks = []; // [8] An array stores all the existing square-canvas regions.
     this.undoStack = [];
     this.redoStack = [];
-    // push() creates one persistent object per region; clicks update that object.
+    // [9] push() adds a persistent object per region; clicks update that object.
     for (const geometry of layout) {
       this.blocks.push(createBlock(this.blocks.length, geometry));
     }
@@ -72,6 +108,9 @@ class InputControls {
     for (let i = 0; i < this.blocks.length; i++) {
       this.blocks[i].colorIndex = states[i].colorIndex;
       this.blocks[i].clickCount = states[i].clickCount;
+      this.blocks[i].baseColorIndex = states[i].colorIndex;
+      this.blocks[i].currentHeight = this.blocks[i].h;
+      this.blocks[i].targetHeight = this.blocks[i].h;
     }
   }
   recordChange(before) {
@@ -80,13 +119,14 @@ class InputControls {
     this.redoStack = [];
   }
   handleClick(canvasX, canvasY) {
+    // [5] || rejects a press if any boundary condition is outside the canvas.
     if (canvasX < 0 || canvasY < 0 || canvasX >= width || canvasY >= height) return;
     const gridX = canvasX * GRID_SIZE / width;
     const gridY = canvasY * GRID_SIZE / height;
     for (const block of this.blocks) {
       if (block.contains(gridX, gridY)) {
         const before = this.snapshot();
-        block.changeColour();
+        block.grow();
         this.recordChange(before);
         break; // A press changes exactly one block, once.
       }
@@ -130,10 +170,13 @@ class InputControls {
       this.save();
     }
   }
+  // [10] for...of updates and displays every stored block.
+  update() { for (const block of this.blocks) block.update(); }
   display() { for (const block of this.blocks) block.display(); }
 }
 
 // p5.js supplies mouseX/mouseY in canvas coordinates, including CSS scaling.
+// [3] p5 calls mousePressed() when the user presses the mouse.
 function mousePressed() {
   if (mouseButton !== LEFT) return;
   if (mouseX >= 0 && mouseX < width && mouseY >= 0 && mouseY < height) {
@@ -141,4 +184,5 @@ function mousePressed() {
     return false;
   }
 }
+// [7] Custom reset function is used by the invisible C keyboard shortcut.
 function resetComposition() { inputControls.reset(); }

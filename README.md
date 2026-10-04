@@ -25,24 +25,43 @@ The `jinsa` branch starts from `main`, independently of `time-based`. It contain
 
 ### Run
 
-Download [jinsa-preview.html](jinsa-preview.html) and open it in a browser. This self-contained offline preview displays **only the square canvas**. For development, open `index.html` with the bundled `libraries/p5.min.js`, or run `python -m http.server 8000`.
+Download [jinsa-square-only.html](jinsa-square-only.html) and open it in a browser. This self-contained offline preview displays **only the square canvas**. For development, open `index.html` with the bundled `libraries/p5.min.js`, or run `python -m http.server 8000`.
 
 ### Interaction instructions
 
-- Click a block directly to change its colour. Each block follows **white → red → yellow → blue → white** independently.
+- Click a block directly to change its colour. Each block follows **white → red → yellow → blue → white** independently. Its new colour fills upward inside that region in approximately 0.35 seconds after a click.
 - Each press changes exactly one block once. Clicking a black divider or outside the canvas does nothing.
 - Colour choices require no palette, keyboard selection, labels or buttons. There is no drag painting or swap mode.
 - Optional keyboard controls: **Ctrl/⌘ + Z** to undo, **Ctrl/⌘ + Shift + Z** or **Ctrl/⌘ + Y** to redo, **C** to clear, and **S** to save a 500 × 500 PNG.
 
 ### Structure and techniques
 
-`input-controls.js` contains the user-input mechanic. `ColourBlock` stores position, size, `colorIndex` and `clickCount`. Its `contains()` method uses bounds comparisons and logical operators; `changeColour()` uses `if / else` to advance or wrap the colour cycle; `display()` draws the current colour. `createBlock()` creates an instance and the controller adds it to the `blocks` array with `push()`. `for...of` loops find the clicked block and display all blocks. The global p5 `mousePressed()` callback receives canvas coordinates and delegates to the controller. `resetComposition()` resets the objects; snapshot history supports undo/redo. `sketch.js` uses `setup()` and `draw()` to assemble and render the mechanic. No time, audio or noise mechanic is implemented here.
+`user-input.js` contains the mechanic. `sketch.js` creates one canvas and calls the controller's update and display methods. Colour changes start only when a region is clicked; there are no scheduled changes, audio or noise mechanics. The animation stays inside the existing region and leaves the black dividers fixed. Plant examples from the presentation are adapted to `ColourBlock` objects, not additional plant drawings.
+
+All 14 presentation techniques are actually called, with numbered comments in the source:
+
+| # | Technique | Use in this artwork |
+|---|---|---|
+| 1 | `setup()` | Creates the single 500 × 500 square canvas and controller. |
+| 2 | `draw()` | Calls update and draws the same canvas every frame. |
+| 3 | `mousePressed()` | Passes a left click to the region hit test. |
+| 4 | `if / else` | Advances the colour index or returns it to white. |
+| 5 | `>`, `<`, `===`, `&&`, `\|\|` | Tests growth, colour-cycle end, and canvas/region boundaries. |
+| 6 | `clickCount`, `currentHeight`, `targetHeight` | Stores each block's click count and fill progress. |
+| 7 | Custom functions | `createBlock()` creates objects; `resetComposition()` clears via C. |
+| 8 | Arrays | `blocks = []` stores all existing regions. |
+| 9 | `push()` | Adds each new block to the array. |
+| 10 | `for...of` | Finds, updates and displays blocks. |
+| 11 | Class, constructor, `new` | `class ColourBlock`, `constructor()` and `new ColourBlock()`. |
+| 12 | Class methods | `contains()` tests clicks; `grow()` starts filling; `update()` advances it; `display()` renders it. |
+| 13 | Global/local variables | Global `inputControls`; local canvas, grid coordinates, frame time and speed. |
+| 14 | Separate script | `user-input.js`, loaded before `sketch.js`. |
 
 **Ownership:** Jinsa Bai — User input, implemented with AI assistance. The static layout tests this individual contribution; team integration can pass shared region data to the constructor.
 
 ### AI and external references
 
-ChatGPT (OpenAI) assisted in generating and explaining the user-input code, test layout, click cycling, history, tests and these notes. Assistance is also acknowledged in the JavaScript and CSS files. A hit test identifies the block under the click, its colour index advances through a fixed array, and snapshots restore colours and click counts for undo/redo. The contributor should review and understand the code before assessment.
+ChatGPT (OpenAI) assisted in generating and explaining the user-input code, test layout, click cycling, upward colour filling, history, tests and these notes. Assistance is also acknowledged in the JavaScript and CSS files. A hit test identifies the block under the click, its colour index advances through a fixed array, and snapshots restore colours and click counts for undo/redo. The contributor should review and understand the code before assessment.
 
 - p5.js mouse input: https://p5js.org/reference/p5/mousePressed/
 - p5.js reference: https://p5js.org/reference/ — canvas, colour fills, rectangles and PNG export. The library is bundled locally.
@@ -50,6 +69,6 @@ ChatGPT (OpenAI) assisted in generating and explaining the user-input code, test
 
 ### Validation
 
-Run `node tests/input-controls.test.cjs`. Tests invoke the actual p5 callbacks with a minimal DOM/drawing adapter and check click cycling, independent blocks, divider/outside rejection, undo/redo, reset, export and a canvas-only page. These are logic tests, not a full browser test. To also render the demonstration PNG, install `@napi-rs/canvas` in your test environment and run `RENDER_PREVIEW=1 node tests/input-controls.test.cjs`.
+Run `node tests/user-input.test.cjs`. Tests invoke the actual p5 callbacks with a minimal DOM/drawing adapter and check click cycling, actual grow/update progress and fill boundaries, independent blocks, divider/outside rejection, undo/redo, reset, export and both canvas-only entry pages. These are logic tests, not a full browser test. To also render the demonstration PNG, install `@napi-rs/canvas` in your test environment and run `RENDER_PREVIEW=1 node tests/user-input.test.cjs`.
 
 ![Composition created by clicking individual blocks](preview/jinsa-demo.png)
