@@ -25,7 +25,7 @@ The `jinsa` branch starts from `main`, independently of `time-based`. It contain
 
 ### Run
 
-Download [jinsa-square-only.html](jinsa-square-only.html) and open it in a browser. This self-contained offline preview displays **only the square canvas**. For development, open `index.html` with the bundled `libraries/p5.min.js`, or run `python -m http.server 8000`.
+Download [jinsa-colour-depth-v2.html](jinsa-colour-depth-v2.html) and open it in a browser. This self-contained offline preview displays **only the square canvas**. For development, open `index.html` with the bundled `libraries/p5.min.js`, or run `python -m http.server 8000`.
 
 ### Interaction instructions
 
@@ -72,3 +72,7 @@ ChatGPT (OpenAI) assisted in generating and explaining the user-input code, test
 Run `node tests/user-input.test.cjs`. Tests invoke the actual p5 callbacks with a minimal DOM/drawing adapter and check 17 distinct fixed colours, progressively darker shades, the eight-click limit, actual grow/update progress and fill boundaries, independent blocks, divider/outside rejection, undo/redo, reset, export and both canvas-only entry pages. These are logic tests, not a full browser test. To also render the demonstration PNG, install `@napi-rs/canvas` in your test environment and run `RENDER_PREVIEW=1 node tests/user-input.test.cjs`.
 
 ![Composition created by clicking individual blocks](preview/jinsa-demo.png)
+
+The animation below renders the actual click handler: every block is clicked once, then repeatedly up to eight times. Each keeps its fixed colour as its shade deepens. It illustrates interaction; it is not an automatic effect in the webpage.
+
+![Actual blocks progressively deepen with repeated clicks](preview/jinsa-depth-demo.gif)

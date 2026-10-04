@@ -76,11 +76,18 @@ check('S invokes PNG export',()=>{key('s');assert.equal(saved,true);});
 check('hit detection also works at a different p5 canvas size',()=>{sandbox.width=250;sandbox.height=250;const before=block(5);press(85,85);assert.equal(block(5),before+1);sandbox.width=500;sandbox.height=500;});
 check('page body has only the canvas holder and scripts',()=>{const html=fs.readFileSync(path.join(root,'index.html'),'utf8');const body=html.match(/<body>([\s\S]*?)<\/body>/)[1];assert(!/<(?:button|p|h[1-6]|header|aside|footer|span)\b/i.test(body));assert.equal(body.replace(/<script[^>]*>[\s\S]*?<\/script>/g,'').replace(/<div id="canvas-holder"><\/div>/,'').trim(),'');});
 check('downloadable offline page has only the canvas holder and no external scripts',()=>{
- const html=fs.readFileSync(path.join(root,'jinsa-square-only.html'),'utf8');
+ const html=fs.readFileSync(path.join(root,'jinsa-colour-depth-v2.html'),'utf8');
  const withoutScripts=html.replace(/<script[^>]*>[\s\S]*?<\/script>/g,'');
  const body=withoutScripts.match(/<body>([\s\S]*?)<\/body>/)[1];
  assert.equal(body.replace(/<div id="canvas-holder"><\/div>/,'').trim(),'');
  assert(!/<script\s+src=/.test(html));
+});
+check('downloadable preview embeds exactly the current fixed-colour mechanic',()=>{
+ const html=fs.readFileSync(path.join(root,'jinsa-colour-depth-v2.html'),'utf8');
+ for(const file of ['user-input.js','sketch.js']){
+  const source=fs.readFileSync(path.join(root,file),'utf8').replaceAll('</script>','<\\/script>');
+  assert(html.includes('<script>\n'+source+'\n</script>'));
+ }
 });
 if(context){
  check('rendering keeps the divider black and colours inside a block',()=>{
@@ -95,5 +102,18 @@ if(context){
  for(const [x,y,n] of [[40,55,1],[190,55,2],[350,60,3],[460,160,2],[60,220,2],[170,170,7],[337,175,2],[390,175,4],[337,290,3],[390,290,2],[60,400,6],[220,380,2],[220,465,3],[350,380,4],[380,450,6],[350,480,2],[460,420,4]])for(let i=0;i<n;i++)press(x,y);
  settle();
  fs.writeFileSync(path.join(root,'preview','jinsa-demo.png'),nativeCanvas.toBuffer('image/png'));
+ if(process.env.RENDER_DEPTH_SEQUENCE){
+  const output=process.env.RENDER_DEPTH_SEQUENCE;
+  fs.mkdirSync(output,{recursive:true});
+  run('resetComposition()');settle();
+  fs.writeFileSync(path.join(output,'depth-0.png'),nativeCanvas.toBuffer('image/png'));
+  for(let count=1;count<=8;count++){
+   const centres=run('inputControls.blocks.map(b=>[b.x+b.w/2,b.y+b.h/2])');
+   for(const [x,y]of centres)press(x,y);
+   settle();
+   fs.writeFileSync(path.join(output,`depth-${count}.png`),nativeCanvas.toBuffer('image/png'));
+  }
+ }
+
 }
 console.log(JSON.stringify({passed:checks,browserTest:false,preview:!!context}));
