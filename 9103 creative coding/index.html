@@ -3,17 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Sketch</title>
-
+    <title>Mondrian: Random colours, smooth transitions</title>
     <link rel="stylesheet" type="text/css" href="style.css">
-
     <script src="libraries/p5.min.js"></script>
     <script src="libraries/p5.sound.min.js"></script>
   </head>
-
   <body>
+    <main>
+      <h1>Random colours, smooth transitions</h1>
+      <p>The grid draws first. Then explore the changing colours.</p>
+      <div id="canvas-container"></div>
+      <p id="colour-status" role="status">Drawing the grid… Colour controls will be ready when the lines finish.</p>
+      <p><strong>P</strong> pauses or resumes the colours. <strong>G</strong> chooses new cells and colours.</p>
+    </main>
     <script src="time-lines.js"></script>
+    <script src="noise-mechanic-okun.js"></script>
     <script src="sketch.js"></script>
   </body>
 </html>
