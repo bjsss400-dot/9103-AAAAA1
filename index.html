@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Growing Mondrian</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- p5.js -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.11.1/lib/p5.min.js"></script>
+
+  <!-- p5.sound is used for loading and analysing audio -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.11.1/lib/addons/p5.sound.min.js"></script>
+</head>
+
+<body>
+
+  <main>
+    <h1>Growing Mondrian</h1>
+
+    <p>
+      Music generates overlapping geometric blocks.
+    </p>
+
+    <div id="canvas-container"></div>
+
+    <div class="instructions">
+      <p>SPACE — Play / Pause</p>
+      <p>R — Reset composition</p>
+    </div>
+  </main>
+
+  <!-- Load the mechanic before sketch.js because sketch.js creates AudioMechanic -->
+  <script src="audio-mechanic.js"></script>
+  <script src="sketch.js"></script>
+
+</body>
+
+</html>
