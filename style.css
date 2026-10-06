@@ -11,28 +11,86 @@ body {
 
 main {
   width: min(1100px, 92%);
-  margin: 40px auto;
+  margin: 50px auto;
+}
+
+/* Title area */
+
+header {
+  margin-bottom: 28px;
 }
 
 h1 {
-  margin-bottom: 5px;
+  margin: 0 0 8px;
+  font-size: 42px;
+  line-height: 1;
+  letter-spacing: -1px;
 }
 
-p {
+.subtitle {
+  margin: 0;
   color: #555555;
+  font-size: 18px;
+  line-height: 1.5;
 }
+
+/* Artwork */
 
 #canvas-container {
   width: 100%;
-  margin-top: 30px;
 }
 
 canvas {
   display: block;
   max-width: 100%;
+  height: auto;
 }
 
+/* Interaction instructions */
+
 .instructions {
-  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-top: 18px;
+  padding-top: 14px;
+
+  border-top: 1px solid #cccccc;
+
   font-size: 14px;
+  color: #555555;
+}
+
+.instructions p {
+  margin: 0;
+}
+
+.key {
+  margin-right: 6px;
+  color: #111111;
+  font-weight: 700;
+}
+
+/* Responsive layout */
+
+@media (max-width: 700px) {
+  main {
+    width: 92%;
+    margin: 30px auto;
+  }
+
+  h1 {
+    font-size: 34px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .instructions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 }

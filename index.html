@@ -16,28 +16,41 @@
   <!-- p5.js -->
   <script src="https://cdn.jsdelivr.net/npm/p5@1.11.1/lib/p5.min.js"></script>
 
-  <!-- p5.sound is used for loading and analysing audio -->
+  <!-- p5.sound -->
   <script src="https://cdn.jsdelivr.net/npm/p5@1.11.1/lib/addons/p5.sound.min.js"></script>
 </head>
 
 <body>
 
   <main>
-    <h1>Growing Mondrian</h1>
 
-    <p>
-      Music generates overlapping geometric blocks.
-    </p>
+    <header>
+      <h1>Growing Mondrian</h1>
+
+      <p class="subtitle">
+        Music generates overlapping geometric blocks.
+      </p>
+    </header>
 
     <div id="canvas-container"></div>
 
     <div class="instructions">
-      <p>SPACE — Play / Pause</p>
-      <p>R — Reset composition</p>
+
+      <p>
+        <span class="key">SPACE</span>
+        Play / Pause
+      </p>
+
+      <p>
+        <span class="key">R</span>
+        Reset composition
+      </p>
+
     </div>
+
   </main>
 
-  <!-- Load the mechanic before sketch.js because sketch.js creates AudioMechanic -->
+  <!-- Each mechanic is stored in a separate script file. -->
   <script src="audio-mechanic.js"></script>
   <script src="sketch.js"></script>
 

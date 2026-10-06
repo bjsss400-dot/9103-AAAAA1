@@ -8,13 +8,15 @@ The Audio mechanic is stored separately in:
 audio-mechanic.js
 
 AI acknowledgement:
-ChatGPT assisted with structuring, explaining and refining
+ChatGPT was used to assist with structuring and explaining
 parts of this code. The student reviewed and modified the
 code and understands how the system works.
 */
 
 
+// --------------------------------------------------
 // GLOBAL VARIABLES
+// --------------------------------------------------
 
 let song;
 let audioMechanic;
@@ -25,16 +27,21 @@ let artworkWidth;
 let artworkHeight;
 
 
+// --------------------------------------------------
 // PRELOAD
+// --------------------------------------------------
 
-// AI-assisted: ChatGPT suggested using preload() so the
-// sound file is loaded before setup() begins.
+// ChatGPT suggested using preload() so the audio file
+// is loaded before the sketch begins.
+
 function preload() {
   song = loadSound("assets/music.mp3");
 }
 
 
+// --------------------------------------------------
 // SETUP
+// --------------------------------------------------
 
 function setup() {
   let canvasWidth = Math.min(windowWidth * 0.9, 1000);
@@ -49,7 +56,9 @@ function setup() {
 }
 
 
+// --------------------------------------------------
 // DRAW
+// --------------------------------------------------
 
 function draw() {
   background(225);
@@ -63,7 +72,7 @@ function draw() {
   audioMechanic.update();
   audioMechanic.display();
 
-  // Outer artwork frame
+  // Artwork frame
   noFill();
   stroke(15);
   strokeWeight(10);
@@ -73,24 +82,33 @@ function draw() {
 }
 
 
+// --------------------------------------------------
 // ARTWORK FRAME
+// --------------------------------------------------
 
 function updateArtworkFrame() {
   artworkX = width * 0.06;
   artworkY = height * 0.07;
+
   artworkWidth = width * 0.88;
   artworkHeight = height * 0.82;
 }
 
 
+// --------------------------------------------------
 // INTERFACE
+// --------------------------------------------------
 
-// AI-assisted: ChatGPT helped structure the interface logic
-// for showing whether the music is playing or paused and
-// displaying the number of generated blocks.
+/*
+ChatGPT assisted with the conditional logic used to show
+whether the audio is playing or paused, as well as the
+number of blocks currently generated.
+*/
+
 function drawInterface() {
   noStroke();
   fill(20);
+
   textSize(14);
   textAlign(LEFT);
 
@@ -114,26 +132,33 @@ function drawInterface() {
 }
 
 
+// --------------------------------------------------
 // KEYBOARD INTERACTION
+// --------------------------------------------------
 
 function keyPressed() {
+  // SPACE: play or pause audio
   if (key === " ") {
     audioMechanic.toggleMusic();
   }
 
+  // R: reset the composition
   if (key === "r" || key === "R") {
     audioMechanic.reset();
   }
 }
 
 
+// --------------------------------------------------
 // RESPONSIVE CANVAS
+// --------------------------------------------------
 
 function windowResized() {
   let canvasWidth = Math.min(windowWidth * 0.9, 1000);
   let canvasHeight = canvasWidth * 0.65;
 
   resizeCanvas(canvasWidth, canvasHeight);
+
   updateArtworkFrame();
 
   if (audioMechanic) {
