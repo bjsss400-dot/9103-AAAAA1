@@ -1,0 +1,9 @@
+/* ChatGPT-assisted styling: display only the artwork canvas. */
+html, body { margin: 0; padding: 0; background: white; }
+#canvas-holder { width: min(500px, 100vw, 100dvh); }
+#canvas-holder canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  touch-action: none;
+}
